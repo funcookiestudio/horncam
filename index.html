@@ -370,10 +370,10 @@ let flashOn=false;
 // ---------- Pós-processamento body cam ----------
 const rt=new THREE.WebGLRenderTarget(2,2,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
 const post=new THREE.ShaderMaterial({
-  uniforms:{t:{value:rt.texture},time:{value:0},res:{value:new THREE.Vector2(1,1)},shake:{value:0},sig:{value:0}},
+  uniforms:{t:{value:rt.texture},time:{value:0},res:{value:new THREE.Vector2(1,1)},shake:{value:0},sig:{value:0},glare:{value:0},lpos:{value:new THREE.Vector2(.5,.5)}},
   vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=vec4(position,1.);}',
   fragmentShader:`
-  varying vec2 v; uniform sampler2D t; uniform float time,shake,sig; uniform vec2 res;
+  varying vec2 v; uniform sampler2D t; uniform float time,shake,sig,glare; uniform vec2 res,lpos;
   float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
   void main(){
     vec2 c=v-.5; float r2=dot(c,c);
@@ -389,6 +389,16 @@ const post=new THREE.ShaderMaterial({
     col=mix(vec3(l),col,.7);                 // dessatura
     col=(col-.5)*1.18+.5+.02;                // contraste
     col*=vec3(1.0,1.03,1.0);                 // leve tom esverdeado
+    if(glare>.001){                          // luz forte direto na lente
+      vec2 dl=v-lpos; dl.x*=res.x/res.y; float dd=length(dl);
+      float core=exp(-dd*dd*900.), halo=exp(-dd*6.5), mid=exp(-dd*22.);
+      float streak=exp(-abs(dl.y)*70.)*exp(-abs(dl.x)*2.2);       // risco horizontal (anamórfico)
+      col*=1.-glare*.38*(1.-halo);                                 // auto-exposição: a cena escurece
+      col=mix(col,vec3(.62,.68,.70),glare*.22*(.4+halo));          // véu de luz: perde contraste
+      col+=vec3(1.,.96,.88)*(core*1.6+mid*.9+halo*.45)*glare;      // halo estourando
+      col+=vec3(.35,.55,1.)*streak*glare*.55;
+      col.r+=halo*glare*.05; col.b+=mid*glare*.08;
+    }
     float g=h(v*res+fract(time)*100.)-.5;    // ruído
     col+=g*.12;
     col*=.93+.07*sin(v.y*res.y*1.6+time*8.);   // scanlines
@@ -830,6 +840,7 @@ const dirt=(()=>{const S=512,c=document.createElement('canvas');c.width=c.height
   g.globalCompositeOperation='source-atop';g.fillStyle='rgb(190,235,225)';g.fillRect(0,0,S,S);
   return c;})();
 const lrc=new THREE.Raycaster();let lfr=0;const lvv=new THREE.Vector3();
+const rpv=new THREE.Vector3(),rqq=new THREE.Quaternion(),rfw=new THREE.Vector3(),rto=new THREE.Vector3();let glareS=0;const glareP={x:.5,y:.5};
 function flare(c,w,h,m){
   const I=Math.min(1,c.I),R=m*(.10+.22*I);
   const rg=(x,y,r,col,al)=>{const g=lx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba('+col+','+al+')');g.addColorStop(1,'rgba('+col+',0)');lx.fillStyle=g;lx.fillRect(x-r,y-r,r*2,r*2);};
@@ -845,7 +856,7 @@ function lensTick(dt){
   const w=Math.max(2,innerWidth*.5|0),h=Math.max(2,innerHeight*.5|0);
   if(lens.width!==w||lens.height!==h){lens.width=w;lens.height=h;}
   lx.globalCompositeOperation='source-over';lx.clearRect(0,0,w,h);
-  if(!active)return;
+  if(!active){glareS=0;post.uniforms.glare.value=0;return;}
   lfr++;const cand=[];
   for(const L of lamps){
     lvv.copy(L.p.position).project(camera);
@@ -858,7 +869,36 @@ function lensTick(dt){
     L.fi=(L.fi||0)+(I-(L.fi||0))*.5;
     cand.push({x:(lvv.x*.5+.5)*w,y:(-lvv.y*.5+.5)*h,I:L.fi});
   }
+  // lanternas dos outros jogadores: só ofuscam quando o feixe aponta pra cá e nada bloqueia
+  if(typeof NET!=='undefined')for(const id in NET.rem){
+    const r=NET.rem[id];
+    if(!r.has||!r.fl||r.dead||!r.g.visible){r.gi=0;continue;}
+    r.lamp.getWorldPosition(rpv);lvv.copy(rpv).project(camera);
+    if(lvv.z>1||Math.abs(lvv.x)>1.6||Math.abs(lvv.y)>1.6){r.gi=0;continue;}
+    const d=camera.position.distanceTo(rpv);
+    r.hd.getWorldQuaternion(rqq);rfw.set(0,0,-1).applyQuaternion(rqq);
+    rto.copy(camera.position).sub(rpv).normalize();
+    const al=rfw.dot(rto);                                   // 1 = feixe apontado direto pra minha lente
+    let cone=Math.max(0,Math.min(1,(al-.78)/.19));cone=cone*cone*(3-2*cone);
+    const base=al>-.1?.07:0;                                  // lâmpada vista de lado: brilho fraco
+    if(lfr%3===0||r.oc===undefined){
+      lrc.set(camera.position,rto.clone().negate());lrc.far=Math.max(.1,d-.3);
+      r.oc=lrc.intersectObjects(hitMeshes,false).some(h=>!(h.object.userData.rp&&h.object.userData.rp.id===r.id));
+    }
+    if(r.oc||d>60){r.gi=0;continue;}
+    const nd=Math.hypot(lvv.x,lvv.y),dist=Math.min(1,12/(d+4))*Math.max(0,1-d/60);
+    const I=Math.max(base,cone)*dist*(.4+.6*(1-Math.min(1,nd/1.8)));
+    r.gi=(r.gi||0)+(I-(r.gi||0))*.5;
+    cand.push({x:(lvv.x*.5+.5)*w,y:(-lvv.y*.5+.5)*h,I:r.gi,rf:true});
+  }
   cand.sort((a,b)=>b.I-a.I);
+  {// ofuscamento da câmera: sobe rápido, desce devagar (a "auto-exposição" demora a se recuperar)
+    let tg=0,bx2=.5,by2=.5;
+    for(const c of cand){if(c.muz)continue;const v=Math.min(1,c.I*(c.rf?1.25:.3));if(v>tg){tg=v;bx2=c.x/w;by2=1-c.y/h;}}
+    glareS+=(tg-glareS)*(1-Math.exp(-dt*(tg>glareS?14:1.8)));
+    if(tg>.02){glareP.x=bx2;glareP.y=by2;}
+    post.uniforms.glare.value=glareS;post.uniforms.lpos.value.set(glareP.x,glareP.y);
+  }
   let bloom=0;for(const c of cand.slice(0,3))bloom+=c.I;bloom=Math.min(1,bloom*1.4);
   if(W.fl>0){fl.getWorldPosition(lvv).project(camera);cand.unshift({x:(lvv.x*.5+.5)*w,y:(-lvv.y*.5+.5)*h,I:.9,muz:true});bloom=Math.min(1,bloom+.6);}
   if(flashOn)bloom=Math.min(1,bloom+.12);
@@ -1159,7 +1199,7 @@ function drawCracks(){
 }
 function deathTick(dt){
   if(PH.dead&&!DA.was){
-    DA.was=true;DA.back=false;DA.t=0;DA.sh=1;DA.dir=Math.random()<.5?-1:1;drawCracks();hurtV=1;
+    DA.was=true;DA.back=false;DA.t=0;DA.sh=1;DA.dir=Math.random()<.5?-1:1;hurtV=1;
     try{nz(.9,.6,8000,.7,.8,.3,'highpass');nz(.2,.8,300,1,2,.3);tn(70,28,.5,.6);tn(1200,90,1.2,.07,'square');}catch(e){}
   }
   if(!PH.dead&&DA.was){DA.was=false;DA.back=true;try{nz(.3,.4,6000,1,1.5,.1,'highpass');tn(400,1600,.25,.06,'square');}catch(e){}}
@@ -1169,11 +1209,9 @@ function deathTick(dt){
     if(DA.t>.4&&DA.t<2.4&&Math.random()<dt*6)s=Math.max(s-.3,.2);   // falhas intermitentes
     if(DA.t>2.4)s=Math.random()>.12?1:.8;                          // sem sinal
     DA.sig+=(s-DA.sig)*(1-Math.exp(-dt*25));DA.vis=DA.sig;
-    crackEl.style.opacity=1;
   }else if(DA.back){
     DA.sig=Math.max(0,DA.sig-dt*1.2);DA.vis=DA.sig*(Math.random()>.2?1:.4);   // sinal voltando, tremendo
-    crackEl.style.opacity=Math.min(1,DA.sig*2);
-    if(DA.sig<=0){DA.back=false;DA.vis=0;crackEl.style.opacity=0;}
+    if(DA.sig<=0){DA.back=false;DA.vis=0;}
   }
   post.uniforms.sig.value=DA.vis;
   if(DA.sh>.01){post.uniforms.shake.value+=DA.sh*40;DA.sh*=Math.exp(-dt*2.5);}
