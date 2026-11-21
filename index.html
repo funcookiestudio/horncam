@@ -871,30 +871,8 @@ function loadMK4Tactical(){
       object.position.copy(center).negate().applyAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2);
       object.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;
         const mats=Array.isArray(node.material)?node.material:[node.material];
-        mats.forEach(mat=>{
-          // Corrige map_d apontando indevidamente para a textura diffuse: não usar como alpha.
-          mat.color.set(0xffffff);
-          mat.opacity=1;
-          mat.transparent=false;
-          mat.alphaMap=null;
-          mat.depthWrite=true;
-          mat.side=THREE.DoubleSide;
-          if(mat.emissive) mat.emissive.set(0x080808);
-          if(mat.map){
-            mat.map.anisotropy=ANISO;
-            mat.map.minFilter=THREE.LinearMipmapLinearFilter;
-            mat.map.magFilter=THREE.LinearFilter;
-            if(THREE.sRGBEncoding) mat.map.encoding=THREE.sRGBEncoding;
-          }
-          // Plate1_nmap.png é um normal map RGB.
-          if(mat.bumpMap){
-            mat.normalMap=mat.bumpMap;
-            mat.bumpMap=null;
-            if(mat.normalScale) mat.normalScale.set(.55,.55);
-          }
-          if(mat.normalMap) mat.normalMap.anisotropy=ANISO;
-          mat.needsUpdate=true;
-        });
+        mats.forEach(mat=>{if(mat.map){mat.map.anisotropy=ANISO;mat.map.minFilter=THREE.LinearMipmapLinearFilter;mat.map.magFilter=THREE.LinearFilter;}
+          if(mat.bumpMap){mat.bumpMap.anisotropy=ANISO;mat.bumpScale=.035;} mat.needsUpdate=true;});
       }});
       mk4Pivot.add(object); mk4Pivot.scale.setScalar(.20); mk4Pivot.position.set(0,.018,-.12);
       legacyWeapon.visible=false; mk4WeaponLoaded=true;
@@ -938,9 +916,7 @@ function ball(c,r,s,mat,p){const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,
 function chain(pts,r,mat,p,tp=.9){let rr=r;const S=(c,q)=>{const s=new THREE.Mesh(new THREE.SphereGeometry(q,10,8),mat);s.position.fromArray(c);p.add(s);};S(pts[0],rr);
   for(let i=1;i<pts.length;i++){const A=new THREE.Vector3().fromArray(pts[i-1]),B=new THREE.Vector3().fromArray(pts[i]),d=B.clone().sub(A),L=d.length(),r2=rr*tp;
     const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,rr,L,10),mat);m.position.copy(A).add(B).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());p.add(m);S(pts[i],r2);rr=r2;}}
-const rh=new THREE.Group();
-rh.position.set(0,.12,-.095); // mão direita alinhada ao punho da MK4 Tactical
-gun.add(rh);
+const rh=new THREE.Group(); gun.add(rh);
 ball([.008,-.075,.108],.028,[.85,1.5,.8],glove,rh);
 ball([.02,-.05,.118],.02,[1.2,.7,1.4],pad,rh);
 for(let i=0;i<3;i++){const y=-.062-.017*i,z=i*.005;chain([[.022,y,.1+z],[.022,y,.05+z],[0,y,.04+z],[-.017,y,.058+z]],.0088-.0004*i,glove,rh,.93);}
@@ -949,9 +925,7 @@ chain([[-.01,-.045,.105],[-.024,-.04,.07],[-.03,-.03,.03]],.0095,glove,rh,.93);
 chain([[.025,-.075,.14],[.032,-.085,.18]],.031,cuff,rh,1.02);
 chain([[.032,-.085,.18],[.12,-.21,.54]],.034,sleeve,rh,1.15);
 const LH=new THREE.Vector3(0,-.022,-.3);
-const lh=new THREE.Group();
-lh.position.set(.018,-.068,-.345); // mão esquerda apoiada sob o handguard
-gun.add(lh);
+const lh=new THREE.Group(); lh.position.set(0,-.075,-.355); gun.add(lh);
 // Cartucho explosivo 40 mm: corpo cilíndrico, ogiva arredondada e base metálica.
 const grenadeProp=new THREE.Group(); grenadeProp.position.set(-.16,-.22,-.20); grenadeProp.rotation.set(0,0,0); grenadeProp.visible=false; gun.add(grenadeProp);
 const roundMat=MT(0x596247,.72,.22), brassMat=MT(0x887044,.32,.78), roundDark=MT(0x30352b,.62,.35);
@@ -1066,7 +1040,7 @@ function weaponUpdate(dt,sprint,sp,amp){
   const reach=grenadeMode?(grenadeReady?0:grenadeReach):0;
   const handLoad=grenadeMode&&grenadeLoading;
   const handToVest=ss(.34,.78,loadT),handToTube=ss(.82,1.34,loadT),handReturn=ss(1.62,1.98,loadT);
-  const gripBase=launcherEquipped?new THREE.Vector3(.018,-.068,-.345):new THREE.Vector3(.018,-.012,-.275);
+  const gripBase=launcherEquipped?new THREE.Vector3(0,-.075,-.355):new THREE.Vector3(0,-.018,-.285);
   const baseLH=new THREE.Vector3(gripBase.x+off[0],gripBase.y+off[1]-.075*reach,gripBase.z+off[2]-.22*reach);
   if(handLoad){
     const vestHand=new THREE.Vector3(-.105,-.17,.20),loadHand=new THREE.Vector3(-.018,-.105,-.205);
@@ -1325,7 +1299,7 @@ function toggleLauncher(){
   launcherEquipped=!launcherEquipped;launcher.visible=true;
   if(launcherEquipped)launcher.scale.setScalar(.001);
   if(!launcherEquipped&&grenadeMode){grenadeMode=false;grenadeLoading=false;grenadeReady=false;grenadeProp.visible=false;grenadeLoadT=0;launcherHinge.rotation.x=0;W.trig=false;W.tl=false;}
-  lh.position.copy(launcherEquipped?new THREE.Vector3(.018,-.068,-.345):new THREE.Vector3(.018,-.012,-.275));
+  lh.position.copy(launcherEquipped?new THREE.Vector3(0,-.075,-.355):new THREE.Vector3(0,-.018,-.285));
   lh.rotation.set(0,0,0);sfx('rel');updAmmo();
   feed(launcherEquipped?'LANÇADOR EQUIPADO':'LANÇADOR DESEQUIPADO');
 }
