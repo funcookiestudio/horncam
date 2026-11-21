@@ -332,8 +332,10 @@ function menuCamSway(t){ // fundo das TVs fica parado; só a interface balança 
   st.setProperty('--mr',(rz*57.2958).toFixed(3)+'deg');}
 function fitMenuCam(a){menuCam.aspect=a;menuCam.updateProjectionMatrix();
   const hh=Math.tan(20*Math.PI/180)*7;let vw,cx,cy;
-  if(a<1.15){vw=680;cx=480;cy=347+.23*(vw/a);}   // retrato: zoom nas TVs, na parte de cima; o resto da tela fica escuro
-  else{vw=Math.max(1100,Math.min(TVW,TVH*a)*.96);cx=vw>=TVW*.9?TVW/2:Math.min(TVW-vw/2,130+vw/2);cy=TVH/2;} // paisagem: cobre a tela, TVs à esquerda
+  // "cover": a imagem sempre preenche a tela (sem faixas pretas) em qualquer proporção
+  vw=Math.min(TVW,TVH*a);                       // largura visível da imagem, em pixels da imagem
+  const x0=a>=1.15?130:480;                      // paisagem: TVs à esquerda (UI à direita); retrato: foco nas TVs
+  cx=Math.max(vw/2,Math.min(TVW-vw/2,a>=1.15?x0+vw/2:x0));cy=TVH/2;
   const gs=2*hh/(vw/a);
   tvG.scale.setScalar(gs);tvG.position.set(-gs*cx,gs*cy,0);}
 let menuWas=false;
