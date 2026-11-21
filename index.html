@@ -29,6 +29,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #id{position:absolute;right:16px;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:right}
 #bot{position:absolute;left:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);opacity:.85}
 #bot{display:none!important}
+body.menu #hud{transform:translate(var(--mx,0px),var(--my,0px)) rotate(var(--mr,0deg))}
 #ov>*{transform:translate(var(--mx,0px),var(--my,0px)) rotate(var(--mr,0deg));will-change:transform}
 #ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.82);text-align:center;padding:24px;z-index:5;cursor:pointer}
 #ov{background:radial-gradient(ellipse at center,rgba(0,0,0,.62) 0%,rgba(0,0,0,.2) 80%);gap:0}
@@ -322,7 +323,7 @@ function tvTick(t){
 }
 function menuCamSway(t){ // fundo das TVs fica parado; só a interface balança (mão tremendo / respiração)
   menuCam.position.set(0,0,7);menuCam.rotation.set(0,0,0);
-  const h=innerHeight,ppr=h/(2*Math.tan(20*Math.PI/180)),ppu=ppr/7,st=ov.style;
+  const h=innerHeight,ppr=h/(2*Math.tan(20*Math.PI/180)),ppu=ppr/7,st=document.documentElement.style;
   const cx=.035*Math.sin(t*.7)+.01*Math.sin(t*3.1),cy=.025*Math.sin(t*1.1)+.008*Math.sin(t*4.3);
   const rx=.005*Math.sin(t*.9),ry=.006*Math.sin(t*.6),rz=.01*Math.sin(t*.4);
   st.setProperty('--mx',(ry*ppr-cx*ppu).toFixed(2)+'px');
@@ -1942,6 +1943,9 @@ const hm=MT(0x1d201a,.75,.1);
 const hs=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),hm); hs.scale.set(.055,.045,.11); helm.add(hs);
 bx(.012,.022,.1,.05,.012,-.01,gry,helm); bx(.03,.025,.05,.03,-.035,-.05,blk,helm);
 helm.position.set(-.25,.02,-.15);
+// capacete também na câmera do menu (mesmo casco na borda esquerda, como na câmera do jogador)
+const menuHelm=helm.clone(true);menuHelm.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshBasicMaterial({color:o.material.color.clone().multiplyScalar(1.9)});}});
+menuScene.add(menuCam);menuCam.add(menuHelm);
 // ---------- Realismo: audio, luz, efeitos de tiro ----------
 hitMeshes.forEach(m=>{m.castShadow=true;m.receiveShadow=true;});
 flash.castShadow=true; flash.shadow.mapSize.set(1024,1024); flash.shadow.camera.near=.1; flash.shadow.camera.far=30; flash.shadow.bias=-.0005;
@@ -2496,7 +2500,8 @@ function tick(){
   renderer.info.reset();
   const MENU=!active&&ov.style.display!=='none';
   if(MENU!==menuWas){menuWas=MENU;if(MENU){hudReady=false;hudEl.classList.remove('on');}}
-  hudEl.classList.toggle('on',hudReady&&!MENU);
+  hudEl.classList.toggle('on',hudReady||MENU);document.body.classList.toggle('menu',MENU);
+  if(MENU){const tH=Math.tan(menuCam.fov*Math.PI/360)*menuCam.aspect;menuHelm.position.x=-(.8*tH*.15+.055);}
   MENU_ON=MENU;post.uniforms.fk.value=MENU?.3:1;
   if(MENU){tvTick(time);menuCamSway(time);post.uniforms.sig.value=menuScare?.25:0;post.uniforms.shake.value=0;renderer.setRenderTarget(rt);renderer.render(menuScene,menuCam);perfTimes.scene=performance.now()-t0;
     t0=performance.now();renderer.setRenderTarget(null);renderer.render(quadScene,quadCam);perfTimes.post=performance.now()-t0;}
@@ -2508,7 +2513,8 @@ function tick(){
   perfTimes.total=performance.now()-frameStart;
   // HUD
   if(active&&!PH.dead)aliveT+=dt;
-  {const t=Math.floor(aliveT);tsEl.textContent='TEMPO VIVO '+p2(t/3600|0)+':'+p2((t/60|0)%60)+':'+p2(t%60);}
+  if(MENU_ON){const d=new Date();tsEl.textContent=p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()+'  '+p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds());}
+  else{const t=Math.floor(aliveT);tsEl.textContent='TEMPO VIVO '+p2(t/3600|0)+':'+p2((t/60|0)%60)+':'+p2(t%60);}
   fpsAcc+=dt;fpsN++; if(fpsAcc>.5){fpsEl.textContent=Math.round(fpsN/fpsAcc)+' FPS';fpsAcc=fpsN=0;}
 }
 function update(dt){
@@ -2570,7 +2576,7 @@ addEventListener('keydown',e=>{if(e.repeat)return;if(!NET.on){if(e.code==='KeyK'
 const ecgW=p=>{const g=(c,w,a)=>a*Math.exp(-Math.pow((p-c)/w,2));return g(.12,.045,.12)+g(.25,.012,-.12)+g(.285,.014,1)+g(.32,.014,-.25)+g(.55,.06,.22);};
 let ecgAcc=0;
 function ecgTick(dt){
-  const hp=PH.hp,col=PH.dead?'#e22':hp>66?'#3f3':hp>33?'#fd2':'#f33';
+  const hp=MENU_ON?20:PH.hp,col=PH.dead?'#e22':hp>66?'#3f3':hp>33?'#fd2':'#f33';
   const bpm=PH.dead?0:Math.round(60+(1-hp/100)*95);
   ecgAcc+=dt*ESP;const n=Math.floor(ecgAcc);ecgAcc-=n;
   ex.strokeStyle=col;ex.lineWidth=2.5;ex.lineJoin='round';ex.shadowColor=col;ex.shadowBlur=5;
