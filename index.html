@@ -83,7 +83,7 @@ input{-webkit-user-select:text;user-select:text}
   <div id="roster"></div>
   <div id="id"><span id="pname">HORNCAM-01</span><br>UNIT 4471<br><span id="fps"></span></div>
   <div id="feed"></div>
-  <div id="bot"><span id="spd">WALK</span> | LANTERNA <span id="fl">OFF</span> | <span id="ammo">M4A1 30/120</span></div>
+  <div id="bot"><span id="spd">WALK</span> | LANTERNA <span id="fl">OFF</span> | <span id="ammo">MK4 TACTICAL 30/120</span></div>
 </div>
 <canvas id="crack"></canvas><div id="hurt"></div><div id="nosig">SINAL PERDIDO</div><div id="msg"></div><div id="spdiag" style="display:none;position:fixed;left:12px;top:110px;z-index:8;padding:9px 11px;background:rgba(0,0,0,.78);border:1px solid rgba(120,220,180,.65);color:#bfffe0;font:11px/1.55 monospace;white-space:pre;pointer-events:none"></div>
 <div id="touch">
@@ -123,6 +123,8 @@ input{-webkit-user-select:text;user-select:text}
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';document.head.appendChild(s)"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
 <script>
 window.addEventListener('error',function(e){var o=document.getElementById('ov');if(o){o.style.display='flex';o.querySelector('p').textContent='Erro: '+e.message;}});
 if(typeof THREE==='undefined'){document.getElementById('ov').querySelector('p').textContent='Não foi possível carregar o three.js. Verifique a conexão e recarregue.';}
@@ -841,10 +843,42 @@ const rim=new THREE.PointLight(0xffffff,.5,2); rim.position.set(0,.1,.2); camera
 const MT=(c,r=.55,m=.25)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
 const blk=MT(0x1a1a1a),gry=MT(0x2c2e30),glove=MT(0x23271f,.9,0),sleeve=MT(0x2b3a2b,.95,0);
 const gun=new THREE.Group(); camera.add(gun);
-function bx(w,h,d,x,y,z,mat,p=gun,rx=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.rotation.x=rx;p.add(m);return m;}
-function cy(r,l,x,y,z,mat,p=gun){const g=new THREE.CylinderGeometry(r,r,l,14);g.rotateX(Math.PI/2);const m=new THREE.Mesh(g,mat);m.position.set(x,y,z);p.add(m);return m;}
+// Geometria antiga de arma fica como fallback até o OBJ tático terminar de carregar.
+const legacyWeapon=new THREE.Group(); gun.add(legacyWeapon);
+let mk4WeaponLoaded=false;
+function bx(w,h,d,x,y,z,mat,p=legacyWeapon,rx=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.rotation.x=rx;p.add(m);return m;}
+function cy(r,l,x,y,z,mat,p=legacyWeapon){const g=new THREE.CylinderGeometry(r,r,l,14);g.rotateX(Math.PI/2);const m=new THREE.Mesh(g,mat);m.position.set(x,y,z);p.add(m);return m;}
 bx(.045,.07,.2,0,-.012,0,blk); bx(.05,.055,.27,0,.035,-.02,gry); bx(.026,.01,.27,0,.066,-.03,blk);
 cy(.03,.3,0,.012,-.31,gry); cy(.008,.2,0,.014,-.55,blk); cy(.013,.07,0,.014,-.66,blk);
+// MK4 Tactical OBJ: eixo longo original X convertido para o eixo de mira -Z do jogo.
+// A caixa delimitadora centraliza o modelo e a escala o ajusta ao rig FPS existente.
+const mk4Pivot=new THREE.Group(); mk4Pivot.name='MK4_Tactical_Model'; gun.add(mk4Pivot);
+function loadMK4Tactical(){
+  if(!THREE.MTLLoader||!THREE.OBJLoader){console.warn('Loaders OBJ/MTL indisponíveis; mantendo arma de fallback.');return;}
+  const assetPath='assets/';
+  const mtlLoader=new THREE.MTLLoader(); mtlLoader.setPath(assetPath); mtlLoader.setTexturePath(assetPath);
+  mtlLoader.load('MK4 Tactical.mtl', materials=>{
+    materials.preload();
+    const objLoader=new THREE.OBJLoader(); objLoader.setMaterials(materials); objLoader.setPath(assetPath);
+    objLoader.load('MK4 Tactical.obj', object=>{
+      object.updateMatrixWorld(true);
+      const bounds=new THREE.Box3().setFromObject(object), center=bounds.getCenter(new THREE.Vector3());
+      object.rotation.y=-Math.PI/2;
+      object.position.copy(center).negate().applyAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2);
+      object.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;
+        const mats=Array.isArray(node.material)?node.material:[node.material];
+        mats.forEach(mat=>{if(mat.map){mat.map.anisotropy=ANISO;mat.map.minFilter=THREE.LinearMipmapLinearFilter;mat.map.magFilter=THREE.LinearFilter;}
+          if(mat.bumpMap){mat.bumpMap.anisotropy=ANISO;mat.bumpScale=.035;} mat.needsUpdate=true;});
+      }});
+      mk4Pivot.add(object); mk4Pivot.scale.setScalar(.20); mk4Pivot.position.set(0,.018,-.12);
+      legacyWeapon.visible=false; mk4WeaponLoaded=true;
+      // O carregador do OBJ substitui o carregador procedural; o grupo continua no rig para preservar a animação de recarga.
+      mag.clear(); mag2.clear();
+      console.info('MK4 Tactical carregada',bounds.getSize(new THREE.Vector3()));
+    },undefined,error=>{console.error('Falha ao carregar MK4 Tactical OBJ:',error);legacyWeapon.visible=true;});
+  },undefined,error=>{console.error('Falha ao carregar materiais MK4:',error);legacyWeapon.visible=true;});
+}
+loadMK4Tactical();
 // Lança-granadas tubular sob o cano: corpo, boca reforçada, anéis e conjunto de carregamento.
 const glMat=MT(0x242729,.48,.72),glEdge=MT(0x45494a,.38,.78),glDark=MT(0x101213,.72,.35);
 const launcher=new THREE.Group(); launcher.position.set(0,-.047,-.405); gun.add(launcher);
@@ -926,7 +960,7 @@ const W={ads:0,sp:0,aim:false,trig:false,cd:0,mag:30,res:120,rl:false,t:0,pt:0,e
 const WA={inspectT:-1,switchT:-1,switchFrom:false,switchTo:true,grenadeKick:0,grenadeRecover:0};
 const easeOut3=t=>1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
 const ammoEl=document.getElementById('ammo');
-const updAmmo=()=>{ammoEl.textContent='M4A1 '+W.mag+'/'+W.res+' '+(W.auto?'AUTO':'SEMI')+(W.hs?' | HOLO':'')+' | LUZ '+(flashOn?'ON':'OFF')+' | GL '+(launcherEquipped?'ON':'OFF')+' | EXP '+blastAmmo+'/3'+(grenadeReady?' [PRONTO]':grenadeLoading?' [CARREGANDO]':'');};
+const updAmmo=()=>{ammoEl.textContent='MK4 TACTICAL '+W.mag+'/'+W.res+' '+(W.auto?'AUTO':'SEMI')+(W.hs?' | HOLO':'')+' | LUZ '+(flashOn?'ON':'OFF')+' | GL '+(launcherEquipped?'ON':'OFF')+' | EXP '+blastAmmo+'/3'+(grenadeReady?' [PRONTO]':grenadeLoading?' [CARREGANDO]':'');};
 let SV=1;
 let AC; function snd(d,g){try{AC=AC||new AudioContext();const n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);const s=AC.createBufferSource(),G=AC.createGain();G.gain.value=g;s.buffer=b;s.connect(G);G.connect(AC.destination);s.start();}catch(e){}}
 const ss=(a,b,t)=>{t=Math.max(0,Math.min(1,(t-a)/(b-a)));return t*t*(3-2*t);};
