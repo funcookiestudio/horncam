@@ -1009,7 +1009,7 @@ function weaponUpdate(dt,sprint,sp,amp){
   launcherTube.updateMatrixWorld(true); gun.updateMatrixWorld(true);
   const tubeWorldQ=new THREE.Quaternion(),gunWorldQ=new THREE.Quaternion();
   launcherTube.getWorldQuaternion(tubeWorldQ); gun.getWorldQuaternion(gunWorldQ);
-  const tubeQGun=gunWorldQ.clone().inverse().multiply(tubeWorldQ);
+  const tubeQGun=gunWorldQ.clone().invert().multiply(tubeWorldQ);
   const breechMouthGun=gun.worldToLocal(launcherTube.localToWorld(new THREE.Vector3(0,0,.176)));
   const breechAxisGun=new THREE.Vector3(0,0,1).applyQuaternion(tubeQGun).normalize();
   // A base traseira do cartucho fica a 52 mm do centro; encosta exatamente na boca.
