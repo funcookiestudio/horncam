@@ -856,7 +856,11 @@ const mk4Pivot=new THREE.Group(); mk4Pivot.name='MK4_Tactical_Model'; gun.add(mk
 function loadMK4Tactical(){
   if(!THREE.MTLLoader||!THREE.OBJLoader){console.warn('Loaders OBJ/MTL indisponíveis; mantendo arma de fallback.');return;}
   const assetPath='assets/';
-  const mtlLoader=new THREE.MTLLoader(); mtlLoader.setPath(assetPath); mtlLoader.setTexturePath(assetPath);
+  const mtlLoader=new THREE.MTLLoader();
+  // Three.js r128 MTLLoader usa setResourcePath() (setTexturePath não existe).
+  // O caminho é relativo ao index.html, portanto funciona também no GitHub Pages.
+  mtlLoader.setPath(assetPath);
+  if(typeof mtlLoader.setResourcePath==='function') mtlLoader.setResourcePath(assetPath);
   mtlLoader.load('MK4 Tactical.mtl', materials=>{
     materials.preload();
     const objLoader=new THREE.OBJLoader(); objLoader.setMaterials(materials); objLoader.setPath(assetPath);
