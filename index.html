@@ -320,14 +320,14 @@ function tvTick(t){
   for(const r of TV_REC)r.mt.opacity=((t*.9+r.ph)%2<1)?1:0;
   for(const l of TV_LED)l.mt.opacity=((t*(1.2+l.i*.23)+l.i*.37)%1<.55)?.85:.2;
 }
-function menuCamSway(t){ // mão tremendo / respiração, como a câmera do jogador parada
-  menuCam.position.set(.035*Math.sin(t*.7)+.01*Math.sin(t*3.1),.025*Math.sin(t*1.1)+.008*Math.sin(t*4.3),7+.04*Math.sin(t*.5));
-  menuCam.rotation.set(.005*Math.sin(t*.9),.006*Math.sin(t*.6),.01*Math.sin(t*.4));
-  // a interface da tela inicial acompanha o balanço da câmera (o fundo escuro do #ov fica parado)
-  const h=innerHeight,ppr=h/(2*Math.tan(20*Math.PI/180)),ppu=ppr/7,c=menuCam.position,r=menuCam.rotation,st=ov.style;
-  st.setProperty('--mx',(r.y*ppr-(c.x)*ppu).toFixed(2)+'px');
-  st.setProperty('--my',(r.x*ppr+c.y*ppu).toFixed(2)+'px');
-  st.setProperty('--mr',(r.z*57.2958).toFixed(3)+'deg');}
+function menuCamSway(t){ // fundo das TVs fica parado; só a interface balança (mão tremendo / respiração)
+  menuCam.position.set(0,0,7);menuCam.rotation.set(0,0,0);
+  const h=innerHeight,ppr=h/(2*Math.tan(20*Math.PI/180)),ppu=ppr/7,st=ov.style;
+  const cx=.035*Math.sin(t*.7)+.01*Math.sin(t*3.1),cy=.025*Math.sin(t*1.1)+.008*Math.sin(t*4.3);
+  const rx=.005*Math.sin(t*.9),ry=.006*Math.sin(t*.6),rz=.01*Math.sin(t*.4);
+  st.setProperty('--mx',(ry*ppr-cx*ppu).toFixed(2)+'px');
+  st.setProperty('--my',(rx*ppr+cy*ppu).toFixed(2)+'px');
+  st.setProperty('--mr',(rz*57.2958).toFixed(3)+'deg');}
 function fitMenuCam(a){menuCam.aspect=a;menuCam.updateProjectionMatrix();
   const hh=Math.tan(20*Math.PI/180)*7;let vw,cx,cy;
   if(a<1.15){vw=680;cx=480;cy=347+.23*(vw/a);}   // retrato: zoom nas TVs, na parte de cima; o resto da tela fica escuro
@@ -2498,7 +2498,7 @@ function tick(){
   if(MENU!==menuWas){menuWas=MENU;if(MENU){hudReady=false;hudEl.classList.remove('on');}}
   hudEl.classList.toggle('on',hudReady&&!MENU);
   MENU_ON=MENU;post.uniforms.fk.value=MENU?.3:1;
-  if(MENU){tvTick(time);menuCamSway(time);post.uniforms.sig.value=menuScare?.25:0;post.uniforms.shake.value=.9+.5*Math.sin(time*1.7);renderer.setRenderTarget(rt);renderer.render(menuScene,menuCam);perfTimes.scene=performance.now()-t0;
+  if(MENU){tvTick(time);menuCamSway(time);post.uniforms.sig.value=menuScare?.25:0;post.uniforms.shake.value=0;renderer.setRenderTarget(rt);renderer.render(menuScene,menuCam);perfTimes.scene=performance.now()-t0;
     t0=performance.now();renderer.setRenderTarget(null);renderer.render(quadScene,quadCam);perfTimes.post=performance.now()-t0;}
   else if(perfBypassPost){renderer.setRenderTarget(null);renderer.render(scene,camera);perfTimes.scene=performance.now()-t0;perfTimes.post=0;}
   else{renderer.setRenderTarget(rt);renderer.render(scene,camera);perfTimes.scene=performance.now()-t0;
