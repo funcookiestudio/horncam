@@ -1,0 +1,15 @@
+/* Menu principal (overlay #ov) e botão de ajuda */
+body.menu #lens{transform:translate(calc(var(--mx,0px)*1.8),calc(var(--my,0px)*1.8)) rotate(calc(var(--mr,0deg)*1.5)) scale(1.04)}
+body.menu #hud{transform:translate(var(--mx,0px),var(--my,0px)) rotate(var(--mr,0deg))}
+#ov>*{transform:translate(var(--mx,0px),var(--my,0px)) rotate(var(--mr,0deg));will-change:transform}
+#ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.82);text-align:center;padding:24px;z-index:5;cursor:pointer}
+#ov{background:radial-gradient(ellipse at center,rgba(0,0,0,.62) 0%,rgba(0,0,0,.2) 80%);gap:0}
+#ov h1{margin:0;font-size:clamp(46px,15vw,104px);line-height:1;letter-spacing:.14em;padding-left:.14em;font-weight:900;text-shadow:0 2px 14px rgba(0,0,0,.9),0 0 22px rgba(255,255,255,.15)}
+#ov #sub{display:flex;align-items:center;gap:8px;margin:12px 0 0;opacity:.7;font-size:12px;letter-spacing:.38em;padding-left:.38em;max-width:none}
+#ov #sub::before{content:"";width:9px;height:9px;border-radius:50%;background:#e22;animation:b 1s steps(2) infinite}
+#ov b{display:block;border:2px solid var(--fg);padding:14px 0;width:min(300px,80vw);margin-top:34px;font-size:18px;letter-spacing:.4em;padding-left:.4em;transition:background .12s,color .12s}
+#ov b:hover,#ov b:active{background:var(--fg);color:#000}
+#helpbtn{margin-top:14px;font:12px "Courier New",monospace;letter-spacing:.3em;color:var(--fg);opacity:.75;background:none;border:0;border-bottom:1px solid rgba(255,255,255,.4);padding:4px 2px;cursor:pointer}
+#helpbtn:hover{opacity:1}
+#ov #lobby #optbtn{display:block;align-self:center;width:auto;min-width:0;margin:10px auto 0;font:11px "Courier New",monospace;letter-spacing:.3em;color:var(--fg);opacity:.55;background:none;border:0;border-radius:0;padding:4px 2px;cursor:pointer;text-transform:uppercase}
+#ov #lobby #optbtn:hover,#ov #lobby #optbtn:active{opacity:1;background:none;color:var(--fg)}

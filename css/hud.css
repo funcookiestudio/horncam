@@ -1,0 +1,21 @@
+/* HUD da body cam, abertura (boot), REC, ECG e identificação */
+#hud{position:fixed;inset:0;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 16px;text-shadow:0 0 3px #000,1px 1px 0 #000;font-size:13px;letter-spacing:1px}
+#hud{opacity:0;transition:opacity .45s}#hud.on{opacity:1}
+#boot{position:fixed;inset:0;z-index:4;pointer-events:none;display:none}#boot.go{display:block}
+#boot .h{position:absolute;left:0;right:0;background:#000;height:50.4%}
+#boot .t{top:0;animation:bt 1.15s cubic-bezier(.7,0,.3,1) forwards}#boot .u{bottom:0;animation:bb 1.15s cubic-bezier(.7,0,.3,1) forwards}
+#boot .l{position:absolute;left:0;right:0;top:calc(50% - 1px);height:2px;background:#fff;box-shadow:0 0 14px 3px rgba(255,255,255,.85);opacity:0;animation:bl 1.15s forwards}
+@keyframes bt{0%,30%{transform:translateY(0)}100%{transform:translateY(-101%)}}
+@keyframes bb{0%,30%{transform:translateY(0)}100%{transform:translateY(101%)}}
+@keyframes bl{0%{opacity:0;transform:scaleX(0)}12%{opacity:1;transform:scaleX(.08)}30%{opacity:1;transform:scaleX(1)}48%{opacity:0;transform:scaleX(1)}100%{opacity:0}}
+#respbtn{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);z-index:7;display:none;font:bold 16px "Courier New",monospace;letter-spacing:.35em;padding:14px 30px 14px 34px;color:var(--fg);background:rgba(0,0,0,.6);border:2px solid var(--fg);cursor:pointer;pointer-events:auto;text-shadow:0 0 3px #000}
+#respbtn:hover,#respbtn:active{background:var(--fg);color:#000}
+#rec{display:flex;align-items:center;gap:6px;font-weight:bold}
+#rec i{width:10px;height:10px;border-radius:50%;background:#e22;animation:b 1s steps(2) infinite}
+@keyframes b{50%{opacity:0}}
+#ts{margin-top:4px}
+#hr{display:flex;align-items:center;gap:8px;margin-top:6px}
+#ecg{position:static;inset:auto;display:block;width:150px;height:34px;filter:drop-shadow(0 0 2px #000)}
+#id{position:absolute;right:16px;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:right}
+#bot{position:absolute;left:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);opacity:.85}
+#bot{display:none!important}

@@ -1,0 +1,11 @@
+/* Lobby multiplayer e sala */
+#lobby{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:34px;padding-top:16px;border-top:1px solid rgba(255,255,255,.18);cursor:default;width:min(340px,92vw)}
+#lobby .lt{font-size:11px;letter-spacing:.3em;opacity:.55;margin-bottom:2px}
+#lobby input,#lobby button{font:bold 13px "Courier New",monospace;letter-spacing:2px;color:var(--fg);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:9px 12px;text-align:center;text-transform:uppercase;min-width:0}
+#lobby button{cursor:pointer}#lobby button:active{background:rgba(255,255,255,.3)}#lobby button:disabled{opacity:.4}
+#lobby .lr{display:flex;gap:8px;width:100%}#lobby .lr>*{flex:1}#lobby #nm{width:100%}
+#roomcode{font-size:30px;letter-spacing:8px;font-weight:bold;display:none;cursor:pointer}
+#lstat{font-size:11px;opacity:.6;line-height:1.5;min-height:16px}
+#lst,#roster{white-space:pre;font-size:12px;line-height:1.5}
+#roster{margin-top:8px;display:none}
+.me{color:#ffd24a}

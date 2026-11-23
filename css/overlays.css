@@ -1,0 +1,6 @@
+/* Feed, dano, lente quebrada, sem sinal e mensagens */
+#feed{position:absolute;right:16px;top:calc(env(safe-area-inset-top,0px) + 124px);text-align:right;font-size:12px;line-height:1.5}
+#hurt{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:2;background:radial-gradient(ellipse at center,rgba(150,0,0,0) 45%,rgba(190,0,0,.75) 100%)}
+#crack{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;z-index:2}
+#nosig{position:fixed;left:0;right:0;top:24%;text-align:center;font:bold 26px "Courier New",monospace;letter-spacing:6px;color:#eee;text-shadow:2px 0 #f0f,-2px 0 #0ff;pointer-events:none;z-index:4;display:none}
+#msg{position:fixed;left:0;right:0;top:36%;text-align:center;font:bold 18px "Courier New",monospace;letter-spacing:3px;color:#e22;text-shadow:0 0 4px #000;pointer-events:none;z-index:4;display:none}
