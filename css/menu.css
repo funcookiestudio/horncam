@@ -13,3 +13,6 @@ body.menu #hud{transform:translate(var(--mx,0px),var(--my,0px)) rotate(var(--mr,
 #helpbtn:hover{opacity:1}
 #ov #lobby #optbtn{display:block;align-self:center;width:auto;min-width:0;margin:10px auto 0;font:11px "Courier New",monospace;letter-spacing:.3em;color:var(--fg);opacity:.55;background:none;border:0;border-radius:0;padding:4px 2px;cursor:pointer;text-transform:uppercase}
 #ov #lobby #optbtn:hover,#ov #lobby #optbtn:active{opacity:1;background:none;color:var(--fg)}
+/* transição de entrada: a interface some enquanto a câmera mergulha na TV */
+#ov.leaving{pointer-events:none;background:none!important;transition:background .3s}
+#ov.leaving>*{opacity:0!important;transition:opacity .3s;pointer-events:none}

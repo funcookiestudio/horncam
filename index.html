@@ -67,7 +67,7 @@
 <div id="opt">
   <div class="box">
     <h2>OPÇÕES</h2>
-    <div class="row"><span>SOM</span><input id="optvol" type="range" min="0" max="100" step="1"><span id="optv"></span></div>
+    <div class="row"><span>SOM</span><button id="optdn" class="vb" type="button" aria-label="Diminuir volume">−</button><input id="optvol" type="range" min="0" max="100" step="1"><button id="optup" class="vb" type="button" aria-label="Aumentar volume">+</button><span id="optv"></span></div>
     <div class="row"><span>MUDO</span><button id="optmute" type="button">DESLIGADO</button></div>
     <div class="row"><span>AJUDA</span><button id="helpbtn" type="button">COMO JOGAR</button></div>
     <button id="optclose" type="button">FECHAR</button>
@@ -98,6 +98,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
 <!-- Código do jogo (ordem importa: scripts clássicos compartilham o escopo global) -->
 <script src="js/core/bootstrap.js"></script>
+<script src="js/core/game-state.js"></script>
 <script src="js/core/renderer.js"></script>
 <script src="js/core/scene.js"></script>
 <script src="js/ui/menu-scene.js"></script>
@@ -114,6 +115,10 @@
 <script src="js/rendering/bodycam-postfx.js"></script>
 <script src="js/player/player.js"></script>
 <script src="js/audio/sound-options.js"></script>
+<script src="js/ui/start-flow.js"></script>
+<script src="js/ui/intro-transition.js"></script>
+<script src="js/ui/touch-input.js"></script>
+<script src="js/player/collision.js"></script>
 <script src="js/weapons/m4a1.js"></script>
 <script src="js/weapons/shot-effects.js"></script>
 <script src="js/audio/menu-sound.js"></script>

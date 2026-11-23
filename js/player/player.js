@@ -15,7 +15,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{keys[e.code]=false; if(e.code==='ControlLeft')P.crouch=false;});
 addEventListener('mousemove',e=>{
-  if(document.pointerLockElement!==canvas) return;
+  if(document.pointerLockElement!==canvas||!active) return;
   P.yaw-=e.movementX*.0022; P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*.0022));
 });
 function toggleLight(){flashOn=!flashOn;flash.intensity=flashOn?2.6:0;if(typeof flashlightAttachment!=='undefined')flashlightAttachment.visible=flashOn;document.getElementById('fl').textContent=flashOn?'ON':'OFF';if(typeof updAmmo==='function')updAmmo();}

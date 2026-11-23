@@ -60,13 +60,10 @@ function tick(){
   t0=performance.now();
   // Acumula estatísticas dos dois passes (cena + pós-processamento), em vez de medir apenas o último.
   renderer.info.reset();
+  introTick(dt);
   const MENU=!active&&ov.style.display!=='none';
-  if(MENU!==menuWas){menuWas=MENU;if(MENU){hudReady=false;hudEl.classList.remove('on');}}
-  hudEl.classList.toggle('on',hudReady||MENU);document.body.classList.toggle('menu',MENU);
-  if(MENU){const tH=Math.tan(menuCam.fov*Math.PI/360)*menuCam.aspect;const k=2*Math.tan(20*Math.PI/180)*.15/innerHeight; // pixels da tela -> unidades no plano do capacete
-    menuHelm.position.x=-(.8*tH*.15+.055)+MS.x*k;menuHelm.position.y=.02-MS.y*k;menuHelm.rotation.z=-MS.r;}
-  MENU_ON=MENU;menuAudioTick(dt,MENU);post.uniforms.fk.value=MENU?.3:1;
-  if(MENU){tvTick(time);menuCamSway(time);post.uniforms.sig.value=menuScare?.25:0;post.uniforms.shake.value=0;renderer.setRenderTarget(rt);renderer.render(menuScene,menuCam);perfTimes.scene=performance.now()-t0;
+  menuFrame(dt,MENU);
+  if(MENU){renderer.setRenderTarget(rt);renderer.render(menuScene,menuCam);perfTimes.scene=performance.now()-t0;
     t0=performance.now();renderer.setRenderTarget(null);renderer.render(quadScene,quadCam);perfTimes.post=performance.now()-t0;}
   else if(perfBypassPost){renderer.setRenderTarget(null);renderer.render(scene,camera);perfTimes.scene=performance.now()-t0;perfTimes.post=0;}
   else{renderer.setRenderTarget(rt);renderer.render(scene,camera);perfTimes.scene=performance.now()-t0;
@@ -120,9 +117,10 @@ function update(dt){
   P.aimTilt+=(-0.055*W.ads-P.aimTilt)*(1-Math.exp(-dt*8));
   camera.rotation.order='YXZ';
   camera.rotation.y=P.camYaw;
-  camera.rotation.x=P.camPitch+Math.sin(P.bobT*2)*.012*amp-P.landKick*.8;
-  camera.rotation.z=Math.cos(P.bobT)*.02*amp+lagRoll+P.aimTilt+DR;
-  camera.fov+=((sprint?86:80-W.ads*20)-camera.fov)*(1-Math.exp(-dt*6)); camera.updateProjectionMatrix();
+  const wk=wakeCam(dt);
+  camera.rotation.x=P.camPitch+Math.sin(P.bobT*2)*.012*amp-P.landKick*.8+wk.p;
+  camera.rotation.z=Math.cos(P.bobT)*.02*amp+lagRoll+P.aimTilt+DR+wk.r;
+  camera.fov+=((sprint?86:80-W.ads*20)+wk.f-camera.fov)*(1-Math.exp(-dt*6)); camera.updateProjectionMatrix();
   weaponUpdate(dt,sprint,sp,amp);
   post.uniforms.shake.value=amp+P.landKick*10+W.rk*20+BSH*25;
   spdEl.textContent=P.crouch?'CROUCH':sprint?'SPRINT':sp>.5?'WALK':'IDLE';

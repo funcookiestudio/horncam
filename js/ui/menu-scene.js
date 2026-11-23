@@ -162,3 +162,14 @@ function addBox(x,z,w,d,h,mat,y0=0){
 }
 const crateMat=new THREE.MeshStandardMaterial({map:noiseTex(110,70,1),color:0x8a6a42,roughness:.9});
 let seed=7; const rnd=()=> (seed=(seed*16807)%2147483647)/2147483647;
+
+// ---------- Quadro da tela inicial (chamado por tick() em debug/profiler.js) ----------
+// Mantém tudo que é só do menu fora do loop do jogo: HUD de câmera, capacete, TVs, balanço da câmera, pós-processamento e áudio do menu.
+function menuFrame(dt,MENU){
+  if(MENU!==menuWas){menuWas=MENU;if(MENU){hudReady=false;hudEl.classList.remove('on');}}
+  hudEl.classList.toggle('on',hudReady||MENU);document.body.classList.toggle('menu',MENU);
+  if(MENU){const tH=Math.tan(menuCam.fov*Math.PI/360)*menuCam.aspect;const k=2*Math.tan(20*Math.PI/180)*.15/innerHeight; // pixels da tela -> unidades no plano do capacete
+    menuHelm.position.x=-(.8*tH*.15+.055)+MS.x*k;menuHelm.position.y=.02-MS.y*k;menuHelm.rotation.z=-MS.r;}
+  MENU_ON=MENU;menuAudioTick(dt,MENU);post.uniforms.fk.value=MENU?.3:1;
+  if(MENU){tvTick(time);menuCamSway(time);post.uniforms.sig.value=menuScare?.25:0;post.uniforms.shake.value=0;introFrame();}
+}
