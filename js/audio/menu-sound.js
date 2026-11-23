@@ -121,7 +121,7 @@ function hit(){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02;
   if(h.instanceId!=null){const m4=new THREE.Matrix4();h.object.getMatrixAt(h.instanceId,m4);n.transformDirection(m4);}
   n.transformDirection(h.object.matrixWorld);
   if(h.object.userData.steel){steelImpact(h,n,rc.ray.direction.clone());return;}
-  if(h.object.userData.chunk){voxImpact(h,n,rc.ray.direction.clone());return;}
+  if(hitChunk(h)){voxImpact(h,n,rc.ray.direction.clone());return;}
   if(h.object.userData.glassG){glassImpact(h,n,rc.ray.direction.clone());return;}
   if(h.object.userData.decK&&decImpact(h,n,rc.ray.direction.clone()))return;
   if(h.object.userData.rp){NET.hitPlayer(h.object.userData.rp,h.point,n);return;}

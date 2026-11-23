@@ -76,7 +76,7 @@ function warpMetal(P,R){
   for(const e of list.slice(0,10)){const c=e[1];
     if(!c.a){c.a=new Uint8Array(c.n[0]*c.n[1]*c.n[2]).fill(1);c.fr=new Uint8Array(c.a.length)}
     (c.warps=c.warps||[]).push({x:P.x,y:P.y,z:P.z,R:RI,ang:(sd<.5?-1:1)*(1.3+sd*1.6),amp:R*.3,sd:sd*40});if(c.warps.length>4)c.warps.shift();
-    if(DEFER)DIRTY.add(c);else rebuild(c)}}
+    if(DEFER)DIRTY.add(c);else RBQ.add(c)}}
 function warpP(c,P){
   for(const w of c.warps){
     for(let i=0;i<P.length;i+=3){
@@ -120,7 +120,7 @@ function voxFx(pt,n,dir,cnt,br,seed,quiet){
    for(let i=0;i<Math.round(8*k);i++)deb1(pt,n,dbk(br),R2(.004,.01),R2(2,5),R2(.5,1.1));}
   nz(.09,.5,900,1,3,.3);tn(120,60,.06,.2)}
 function voxImpact(h,n,dir){
-  const c=h.object.userData.chunk,cnt=dmgCount(h.point),br=c.dcode||(c.type==='brick'?1:0),seed=(Math.random()*1e9)|0,
+  const c=hitChunk(h),cnt=dmgCount(h.point),br=c.dcode||(c.type==='brick'?1:0),seed=(Math.random()*1e9)|0,
     r3=v=>[+v.x.toFixed(3),+v.y.toFixed(3),+v.z.toFixed(3)],r4=v=>[+v.x.toFixed(4),+v.y.toFixed(4),+v.z.toFixed(4)],
     p=r3(h.point),nn=r4(n),dd=r4(dir);
   voxFx(new V3(...p),new V3(...nn),new V3(...dd),cnt,br,seed,false);

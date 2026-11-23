@@ -356,5 +356,5 @@ const hs=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),hm); hs.scale.set(.055
 bx(.012,.022,.1,.05,.012,-.01,gry,helm); bx(.03,.025,.05,.03,-.035,-.05,blk,helm);
 helm.position.set(-.25,.02,-.15);
 // capacete também na câmera do menu (mesmo casco na borda esquerda, como na câmera do jogador)
-const menuHelm=helm.clone(true);menuHelm.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshBasicMaterial({color:o.material.color.clone().multiplyScalar(1.9)});}});
+const menuHelm=helm.clone(true);menuHelm.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshBasicMaterial({color:o.material.color.clone().multiplyScalar(1.9),transparent:true});o.renderOrder=100;}}); // transparent+renderOrder alto: desenha por último, por cima das TVs/brilhos/LEDs do menu (que são transparentes e depthTest:false)
 menuScene.add(menuCam);menuCam.add(menuHelm);

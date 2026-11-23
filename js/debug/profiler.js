@@ -6,12 +6,13 @@ const perfPanel=document.createElement('pre');
 perfPanel.id='horncam-perf-panel';
 perfPanel.style.cssText='display:none;position:fixed;z-index:99999;left:12px;top:90px;max-width:min(560px,90vw);padding:12px;background:rgba(0,0,0,.88);color:#9fffb0;border:1px solid #4a8;border-radius:6px;font:12px/1.5 monospace;white-space:pre-wrap;pointer-events:none';
 document.body.appendChild(perfPanel);
+if(/[?&]perf=1/.test(location.search)){perfDiagOn=true;perfPanel.style.display='block';perfPanel.style.fontSize='10px';perfPanel.style.pointerEvents='none'} // ?perf=1: painel só de diagnóstico, visível no celular (não altera gráficos)
 addEventListener('keydown',e=>{
  if(e.code==='F4'){perfDiagOn=!perfDiagOn;perfPanel.style.display=perfDiagOn?'block':'none';e.preventDefault();}
  if(e.code==='F5'){perfPointLights=!perfPointLights;for(const q of LPOOL)q.l.visible=perfPointLights;e.preventDefault();}
  if(e.code==='F6'){perfShadows=!perfShadows;renderer.shadowMap.enabled=perfShadows;if(!perfShadows){renderer.shadowMap.autoUpdate=false;}else{renderer.shadowMap.autoUpdate=true;renderer.shadowMap.needsUpdate=true;}e.preventDefault();}
  if(e.code==='F7'){perfBypassPost=!perfBypassPost;e.preventDefault();}
- if(e.code==='F8'){perfVoxelsVisible=!perfVoxelsVisible;for(const c of vchunks)if(c.mesh)c.mesh.visible=perfVoxelsVisible;e.preventDefault();}
+ if(e.code==='F8'){perfVoxelsVisible=!perfVoxelsVisible;for(const c of vchunks)if(c.mesh)c.mesh.visible=perfVoxelsVisible;for(const b of VBATCH)b.visible=perfVoxelsVisible;e.preventDefault();}
  if(e.code==='F9'){lensEffectsEnabled=!lensEffectsEnabled;if(!lensEffectsEnabled){const cv=document.getElementById('lens');if(cv){const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);}glareS=0;post.uniforms.glare.value=0;}e.preventDefault();}
 });
 function perfReport(dt){
@@ -31,7 +32,7 @@ function perfReport(dt){
 function updateSpatialDiagnostics(dt){
   if(!spatialDiagOn)return;diagTimer-=dt;if(diagTimer>0)return;diagTimer=.25;
   const info=renderer.info,tri=info.render.triangles||0;
-  let loaded=0,visible=0;for(const c of vchunks){if(c.mesh){loaded++;if(c.mesh.visible)visible++;}}
+  let loaded=VBATCH.length,visible=0;for(const b of VBATCH)if(b.visible)visible++;for(const c of vchunks){if(c.mesh){loaded++;if(c.mesh.visible)visible++;}}
   const draw=info.render.calls||0;
   const mem=performance&&performance.memory?Math.round(performance.memory.usedJSHeapSize/1048576)+' MB':'n/d';
   spdiagEl.textContent='HORNCAM / SPATIAL DIAGNOSTICS\\n'+
@@ -46,11 +47,12 @@ function updateSpatialDiagnostics(dt){
 const p2=n=>String(n).padStart(2,'0');
 function tick(){
   requestAnimationFrame(tick);
+  if(VOX_DEFER)finalizeVox(); // 1º quadro: todo o mapa já foi gerado; agrupa chunks intactos em lotes instanciados
   const frameStart=performance.now();
   const dt=Math.min(clock.getDelta(),.05); time+=dt;
   let t0=performance.now();if(active) update(dt);perfTimes.logic=performance.now()-t0;
   t0=performance.now();netTick(dt);perfTimes.network=performance.now()-t0;
-  t0=performance.now();fxVox(dt);ammoBoxTick(dt);ecgTick(dt);perfTimes.effects=performance.now()-t0;
+  t0=performance.now();fxVox(dt);rebuildTick();fxRender();ammoBoxTick(dt);ecgTick(dt);perfTimes.effects=performance.now()-t0;
   t0=performance.now();expo(dt);{let on=0;for(const L of RL)if(!(L.off&&L.fz<=0))on++;AMB+=(on/RL.length-AMB)*(1-Math.exp(-dt*3));}
   hemi.intensity=(.04+.31*AMB)*EXPO; rim.intensity=(.15+.35*AMB)*EXPO;
   lampTick(dt);perfTimes.lighting=performance.now()-t0;

@@ -56,7 +56,7 @@ function rbBuild(c){
   if(!P.length)return;
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));
   g.setIndex(I);g.computeBoundingSphere();
-  const m=new THREE.Mesh(g,RBM);m.userData.steel=c;scene.add(m);hitMeshes.push(m);c.rbm=m}
+  const m=new THREE.Mesh(g,RBM);m.userData.steel=c;freezeObj(m);scene.add(m);hitMeshes.push(m);c.rbm=m}
 // remove, de cada barra, o trecho que cai dentro da esfera (Pt,R); devolve true se algo foi cortado
 function rbCut(c,Pt,R){
   if(!c.rb)return false;
@@ -118,8 +118,8 @@ const bfx=[],bFl=document.createElement('div');let BSH=0;
 bFl.style.cssText='position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4';document.body.appendChild(bFl);
 function bsmk(pos,vel,sz,life,col,op,add){
   if(bfx.length>170)return;
-  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:PT,color:col,transparent:true,opacity:op,depthWrite:false,blending:add?THREE.AdditiveBlending:THREE.NormalBlending}));
-  s.position.copy(pos);s.scale.setScalar(sz*.4);scene.add(s);bfx.push({s,v:vel.clone(),sz,l:life,t:0,op,add})}
+  const s=mkFxSprite(col,op,add);
+  s.position.copy(pos);s.scale.setScalar(sz*.4);bfx.push({s,v:vel.clone(),sz,l:life,t:0,op,add})}
 const BX={ring:null,sc:[],si:0,rT:9,rR:1};
 function bxInit(){if(BX.ring)return;
   const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,3,32,32,32);
@@ -158,14 +158,14 @@ function lobesApply(lobes,mn,mx,tun,n){
     for(let iy=y0;iy<=y1;iy++)for(let iz=z0;iz<=z1;iz++)for(let ix=x0;ix<=x1;ix++){
       const id=(iy*nz+iz)*nx+ix;if(!a[id])continue;
       v.set(c.min.x+(ix+.5)*vs,c.min.y+(iy+.5)*vs,c.min.z+(iz+.5)*vs);
-      const q=vnz(v.x*40+seed,v.y*40,v.z*40);let dead=false;
+      let q=-1,dead=false; // q (ruído) é calculado sob demanda: a maioria dos voxels do cubo de busca está longe de qualquer lobo
       for(const lb of lobes){const dd=v.distanceTo(lb[0]);
         if(lb[2]){const R_=lb[1]/hd;if(dd<R_*.8){dead=true;break}if(dd<R_*1.2){const nq=.65*vnz(v.x*6+seed,v.y*6,v.z*6)+.35*vnz(v.x*20+seed,v.y*20,v.z*20);if(dd<R_*(.8+.4*nq)){dead=true;break}}}
-        else if(dd<Math.max(lb[1]/hd*(.65+.7*q),bb)){dead=true;break}}
-      if(!dead&&tun){w.copy(v).sub(tun.P0);const t=w.dot(tun.d);if(t>-.01&&t<tun.tl/hd){const rt=tun.tr/hd*(.7+.7*q);dead=w.lengthSq()-t*t<rt*rt}}
+        else{const R1=lb[1]/hd;if(dd<Math.max(R1*1.35,bb)){if(q<0)q=vnz(v.x*40+seed,v.y*40,v.z*40);if(dd<Math.max(R1*(.65+.7*q),bb)){dead=true;break}}}}
+      if(!dead&&tun){w.copy(v).sub(tun.P0);const t=w.dot(tun.d);if(t>-.01&&t<tun.tl/hd){const d2=w.lengthSq()-t*t,lim=tun.tr/hd*1.4;if(d2<lim*lim){if(q<0)q=vnz(v.x*40+seed,v.y*40,v.z*40);const rt=tun.tr/hd*(.7+.7*q);dead=d2<rt*rt}}}
       if(dead){a[id]=0;kc++;if(kp.length<(ISL?150:40)&&VR()<(ISL?.004:.3)){const k_=v.clone();k_.br=c.dcode||(c.type==='brick'?1:0);kp.push(k_)}
         for(const o of NBR){const X=ix+o[0],Y=iy+o[1],Z=iz+o[2];if(X>=0&&Y>=0&&Z>=0&&X<nx&&Y<ny&&Z<nz)fr[(Y*nz+Z)*nx+X]=1}}}
-    if(kc){if(ISL)dropIslands(c,x0,x1,y0,y1,z0,z1,lobes[0][0]);else dropOrphans(c,x0,x1,y0,y1,z0,z1,n);if(DEFER)DIRTY.add(c);else rebuild(c)}}
+    if(kc){if(ISL)dropIslands(c,x0,x1,y0,y1,z0,z1,lobes[0][0]);else dropOrphans(c,x0,x1,y0,y1,z0,z1,n);if(DEFER)DIRTY.add(c);else RBQ.add(c)}}
   return kp}
 function carve(P0,d,n,cnt,graze){
   const k=Math.min(cnt,24),rr=graze?.02:.05+k*.006,tr=graze?0:.03,tl=graze?0:.04+Math.min(cnt,30)*.02,R=rr*4.2+.02;

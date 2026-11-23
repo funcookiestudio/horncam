@@ -16,20 +16,58 @@ vec3 br_=mix(vec3(.55,.26,.15),vec3(.78,.4,.24),mix(.5,h31(vec3(c_,bi_,3.)),a1_)
 bc_=mix(bc_,br_,(1.-cv_)*(1.-cu_));}
 diffuseColor.rgb*=bc_*.9;`;
 function mkVMat(fr,key){const m=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.95,vertexColors:true});m.extensions={derivatives:true};
-  m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWP=(modelMatrix*vec4(transformed,1.)).xyz;');
+  m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef USE_INSTANCING\nvWP=(modelMatrix*instanceMatrix*vec4(transformed,1.)).xyz;\n#else\nvWP=(modelMatrix*vec4(transformed,1.)).xyz;\n#endif');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;\n'+GL).replace('#include <color_fragment>','#include <color_fragment>\n'+fr)};
   m.customProgramCacheKey=()=>'vox'+key;return m}
 const VMB=mkVMat(BFR(),'b'); // um único material/programa para paredes de tijolo (eixo escolhido pela normal da face)
 const VM={conc:mkVMat('float f_=ff_(vWP),a9_=1.-smoothstep(.3,.9,f_*9.),a37_=1.-smoothstep(.3,.9,f_*37.),n9_=.5,n37_=.5;if(a9_>.001)n9_=mix(.5,vn(vWP*9.),a9_);if(a37_>.001)n37_=mix(.5,vn(vWP*37.),a37_);diffuseColor.rgb*=vec3(.6)*(.8+.35*n9_+.15*n37_);','c'),bx:VMB,bz:VMB};
 VM.floor=mkVMat('float f_=ff_(vWP),a9_=1.-smoothstep(.3,.9,f_*9.),a37_=1.-smoothstep(.3,.9,f_*37.),n9_=.5,n37_=.5;if(a9_>.001)n9_=mix(.5,vn(vWP*9.),a9_);if(a37_>.001)n37_=mix(.5,vn(vWP*37.),a37_);diffuseColor.rgb*=vec3(.42)*(.8+.35*n9_+.15*n37_);','f');
 let CUR_EL=null; // elemento estrutural em construção (laje/viga/pilar): define a armadura embutida
+let VOX_DEFER=true;const VPEND=[],VBATCH=[];
 function mkChunk(mn,mx,type,mk,vs_){const V_=vs_||VS;
   const n=[Math.max(1,Math.round((mx.x-mn.x)/V_)),Math.max(1,Math.round((mx.y-mn.y)/V_)),Math.max(1,Math.round((mx.z-mn.z)/V_))];
   mx=new V3(mn.x+n[0]*V_,mn.y+n[1]*V_,mn.z+n[2]*V_);
-  const c={min:mn,max:mx,n,vs:V_,type,mk,el:CUR_EL,hard:mk==='floor'?2.5:1,a:null,fr:null,mesh:null},sz=mx.clone().sub(mn);
+  const c={min:mn,max:mx,n,vs:V_,type,mk,el:CUR_EL,hard:mk==='floor'?2.5:1,a:null,fr:null,mesh:null,ib:null,ii:-1};
+  if(VOX_DEFER){VPEND.push(c);vchunks.push(c);return c} // intacto: vira instância de um lote (ver finalizeVox)
+  const sz=mx.clone().sub(mn);
   const g=new THREE.BoxGeometry(sz.x,sz.y,sz.z);g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(72).fill(1),3));
   const m=new THREE.Mesh(g,VM[mk]);m.position.copy(mn).addScaledVector(sz,.5);m.castShadow=m.receiveShadow=true;m.userData.chunk=c;
-  scene.add(m);hitMeshes.push(m);c.mesh=m;vchunks.push(c);return c}
+  freezeObj(m);scene.add(m);hitMeshes.push(m);c.mesh=m;vchunks.push(c);return c}
+// ===== Chunks intactos em lotes instanciados (1 draw call por material e por célula de 64 m, com frustum culling) =====
+// Antes: ~4.300 malhas (uma por chunk) = ~2.000 draw calls por quadro dentro de um galpão. Chunk danificado volta a ter malha própria (rebuild).
+const VZERO=new THREE.Matrix4().makeScale(0,0,0);
+function hitChunk(h){const u=h.object.userData;return u.chunk||(u.vox&&u.vox[h.instanceId])||null}
+function hideVox(c){const b=c.ib;if(!b)return;b.im.setMatrixAt(c.ii,VZERO);b.alive[c.ii]=0;b.im.instanceMatrix.needsUpdate=true;c.ib=null}
+function voxBatchRaycast(rc,hits){ // caixas alinhadas aos eixos: teste de slab exato (só faces externas, como o FrontSide do mesh antigo)
+  const b=this.userData.vb,o=rc.ray.origin,d=rc.ray.direction,bb=b.bb,al=b.alive,n=al.length,far=rc.far,near=rc.near;
+  const ix=1/d.x,iy=1/d.y,iz=1/d.z;
+  for(let i=0;i<n;i++){if(!al[i])continue;const k=i*6;
+    let t1=(bb[k]-o.x)*ix,t2=(bb[k+3]-o.x)*ix,tn=Math.min(t1,t2),tf=Math.max(t1,t2),ax=t1<t2?-1:1,ay=0,az=0;
+    t1=(bb[k+1]-o.y)*iy;t2=(bb[k+4]-o.y)*iy;let a=Math.min(t1,t2),bq=Math.max(t1,t2);if(a>tn){tn=a;ax=0;ay=t1<t2?-1:1}if(bq<tf)tf=bq;
+    t1=(bb[k+2]-o.z)*iz;t2=(bb[k+5]-o.z)*iz;a=Math.min(t1,t2);bq=Math.max(t1,t2);if(a>tn){tn=a;ax=0;ay=0;az=t1<t2?-1:1}if(bq<tf)tf=bq;
+    if(tn>tf||tn<near||tn>far||tn!==tn)continue;
+    const pt=new THREE.Vector3().copy(d).multiplyScalar(tn).add(o);
+    hits.push({distance:tn,point:pt,object:this,instanceId:i,face:{a:0,b:0,c:0,normal:new THREE.Vector3(ax,ay,az),materialIndex:0}})}}
+function finalizeVox(){
+  if(!VOX_DEFER)return;VOX_DEFER=false;
+  const groups=new Map(),CELL=32;
+  for(const c of VPEND){const mat=VM[c.mk],cx=Math.floor((c.min.x+c.max.x)/2/CELL),cz=Math.floor((c.min.z+c.max.z)/2/CELL),key=mat.uuid+'|'+cx+'|'+cz;
+    let g=groups.get(key);if(!g)groups.set(key,g={mat,list:[]});g.list.push(c)}
+  const unit=new THREE.BoxGeometry(1,1,1);unit.setAttribute('color',new THREE.BufferAttribute(new Float32Array(72).fill(1),3));
+  const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),pos=new V3(),scl=new V3();
+  for(const g of groups.values()){
+    const N=g.list.length,geo=unit.clone(),im=new THREE.InstancedMesh(geo,g.mat,N),bb=new Float32Array(N*6),alive=new Uint8Array(N).fill(1);
+    let mnx=1e9,mny=1e9,mnz=1e9,mxx=-1e9,mxy=-1e9,mxz=-1e9;
+    g.list.forEach((c,i)=>{pos.set((c.min.x+c.max.x)/2,(c.min.y+c.max.y)/2,(c.min.z+c.max.z)/2);scl.set(c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z);
+      m4.compose(pos,q,scl);im.setMatrixAt(i,m4);
+      bb[i*6]=c.min.x;bb[i*6+1]=c.min.y;bb[i*6+2]=c.min.z;bb[i*6+3]=c.max.x;bb[i*6+4]=c.max.y;bb[i*6+5]=c.max.z;
+      mnx=Math.min(mnx,c.min.x);mny=Math.min(mny,c.min.y);mnz=Math.min(mnz,c.min.z);mxx=Math.max(mxx,c.max.x);mxy=Math.max(mxy,c.max.y);mxz=Math.max(mxz,c.max.z);
+      c.ib={im,alive};c.ii=i});
+    im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    geo.boundingSphere=new THREE.Sphere(new V3((mnx+mxx)/2,(mny+mxy)/2,(mnz+mxz)/2),Math.hypot(mxx-mnx,mxy-mny,mxz-mnz)/2+.01); // só para o frustum culling (raycast é próprio)
+    im.frustumCulled=true;freezeObj(im);im.castShadow=im.receiveShadow=true;im.userData.vox=g.list;im.userData.vb={bb,alive};im.raycast=voxBatchRaycast;
+    scene.add(im);hitMeshes.push(im);VBATCH.push(im)}
+  VPEND.length=0}
 function block(x0,y0,z0,x1,y1,z1,type,mk,tx,ty,tz){
   // Todas as fronteiras de chunk caem na grade de voxels (VS): sem frestas nem sobreposição entre blocos vizinhos
   // (antes cada chunk era arredondado para a grade mas o vizinho começava fora dela -> fendas escuras nas paredes de tijolo).

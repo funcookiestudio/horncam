@@ -32,15 +32,14 @@ const SPAWN_LIST=[];[[0,21],[0,-21],[-19,5],[15,5],[-6,20],[5,-19.5]].forEach(p=
         f:[BXG,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.92})],w:[BXG,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.95})],
         g:[BXG,new THREE.MeshStandardMaterial({color:0xaad0e0,roughness:.05,transparent:true,opacity:.3,depthWrite:false})],l:[BXG,new THREE.MeshBasicMaterial({color:0xfff2d6})]},
       o=new THREE.Object3D(),c=new THREE.Color();
-    for(const k in DEC){const L=DEC[k],im=new THREE.InstancedMesh(T[k][0],T[k][1],L.length);
-      L.forEach((b,i)=>{o.position.set(b[0],b[1],b[2]);o.rotation.set(0,b[7],0);o.scale.set(b[3],b[4],b[5]);o.updateMatrix();im.setMatrixAt(i,o.matrix);im.setColorAt(i,c.setHex(b[6]))});
-      // Segurança: estas InstancedMeshes reúnem decoração de todos os 10 armazéns.
-      // No Three.js r128, não confiar no frustum culling automático deste lote global:
-      // um bounding sphere incorreto pode ocultar o lote inteiro ao girar a câmera.
-      im.frustumCulled=false;
-      im.castShadow=k!='g'&&k!='l'&&k!='f'&&k!='w';im.receiveShadow=true;scene.add(im);
-      if(k!='l'&&k!='f'&&k!='w')decorHit.push(im);
-      if(k==='m'||k==='s'||k==='g'){im.userData.decK=k;DECK[k]={im,L};L.forEach((b,i)=>{const key=Math.floor(b[0]/4)+','+Math.floor(b[2]/4);let a=DGRID.get(key);if(!a)DGRID.set(key,a=[]);a.push([k,i]);
+    for(const k in DEC){const L=DEC[k];
+      // lotes por célula espacial com frustum culling próprio (antes: 1 lote global com frustumCulled=false = ~480 mil triângulos/quadro)
+      const parts=batchInstanced(T[k][0],T[k][1],L,b=>[b[0],b[1],b[2],Math.hypot(b[3],b[4],b[5])/2],
+        (im,j,b)=>{o.position.set(b[0],b[1],b[2]);o.rotation.set(0,b[7],0);o.scale.set(b[3],b[4],b[5]);o.updateMatrix();im.setMatrixAt(j,o.matrix);im.setColorAt(j,c.setHex(b[6]))});
+      for(const im of parts.ims){im.castShadow=k!='g'&&k!='l'&&k!='f'&&k!='w';im.receiveShadow=true;scene.add(im);
+        if(k!='l'&&k!='f'&&k!='w')decorHit.push(im);
+        if(k==='m'||k==='s'||k==='g')im.userData.decK=k}
+      if(k==='m'||k==='s'||k==='g'){DECK[k]={part:parts.part,L};L.forEach((b,i)=>{const key=Math.floor(b[0]/4)+','+Math.floor(b[2]/4);let a=DGRID.get(key);if(!a)DGRID.set(key,a=[]);a.push([k,i]);
         // faixa de tinta no piso (comprida e fina): registra em TODAS as células que ela cobre, senão a explosão só a acharia pelo centro
         if(k==='s'&&b[4]<=.03&&b[1]<.2){const q=Math.round(b[7]/(Math.PI/2)),od=Math.abs(q)%2===1,ex=(od?b[5]:b[3])/2,ez=(od?b[3]:b[5])/2,
           cx0=Math.floor((b[0]-ex)/4),cx1=Math.floor((b[0]+ex)/4),cz0=Math.floor((b[2]-ez)/4),cz1=Math.floor((b[2]+ez)/4);

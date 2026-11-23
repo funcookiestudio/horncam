@@ -27,11 +27,20 @@ function spatialRaycast(raycaster,objects,recursive=false){
 }
 
 // geração da malha: greedy meshing (só faces expostas, fundidas em retângulos); faces recém-expostas ficam mais claras
+// Fila de reconstrução de malha: várias marteladas/explosões no mesmo chunk viram UM rebuild, e o trabalho é espalhado entre quadros
+// (orçamento por quadro, mais perto da câmera primeiro). Os dados de voxel/colisão já estão atualizados na hora; só a malha chega alguns quadros depois.
+const RBQ=new Set(),RB_BUDGET=5;
+function rebuildTick(){
+  if(!RBQ.size)return;const t0=performance.now(),cp=camera.position;
+  do{let best=null,bd=1e18;for(const c of RBQ){const dx=(c.min.x+c.max.x)*.5-cp.x,dz=(c.min.z+c.max.z)*.5-cp.z,d=dx*dx+dz*dz;if(d<bd){bd=d;best=c}}
+    RBQ.delete(best);rebuild(best)}while(RBQ.size&&performance.now()-t0<RB_BUDGET)}
 function rebuild(c){
+  if(c.ib)hideVox(c);
   if(c.mesh){const i=hitMeshes.indexOf(c.mesh);if(i>=0)hitMeshes.splice(i,1);scene.remove(c.mesh);c.mesh.geometry.dispose();c.mesh=null}
   const [nx,ny,nz]=c.n,a=c.a,fr=c.fr,vs=c.vs,dims=[nx,ny,nz],st=[1,nz*nx,nx],P=[],NM=[],CO=[],IX=[],p=[0,0,0];
-  const emit=(d,u,v,sg,kp,i,j,w,h,m)=>{const k=m==2?1.35:1,b=P.length/3;
-    [[i,j],[i+w,j],[i+w,j+h],[i,j+h]].forEach(([s1,s2])=>{const q=[0,0,0];q[d]=kp;q[u]=s1;q[v]=s2;P.push(c.min.x+q[0]*vs,c.min.y+q[1]*vs,c.min.z+q[2]*vs);const nn=[0,0,0];nn[d]=sg;NM.push(nn[0],nn[1],nn[2]);CO.push(k,k,k)});
+  const qv=[0,0,0],nn=[0,0,0];
+  const emit=(d,u,v,sg,kp,i,j,w,h,m)=>{const k=m==2?1.35:1,b=P.length/3;nn[0]=nn[1]=nn[2]=0;nn[d]=sg;
+    for(let t=0;t<4;t++){qv[d]=kp;qv[u]=(t===1||t===2)?i+w:i;qv[v]=t>=2?j+h:j;P.push(c.min.x+qv[0]*vs,c.min.y+qv[1]*vs,c.min.z+qv[2]*vs);NM.push(nn[0],nn[1],nn[2]);CO.push(k,k,k)}
     if(sg>0)IX.push(b,b+1,b+2,b,b+2,b+3);else IX.push(b,b+2,b+1,b,b+3,b+2)};
   const emitW=(d,u,v,sg,kp,i,j,w,h,m)=>{if(!c.warps||(w<3&&h<3)){emit(d,u,v,sg,kp,i,j,w,h,m);return}for(let jj=0;jj<h;jj+=2)for(let ii=0;ii<w;ii+=2)emit(d,u,v,sg,kp,i+ii,j+jj,Math.min(2,w-ii),Math.min(2,h-jj),m)};
   for(let d=0;d<3;d++){const u=(d+1)%3,v=(d+2)%3,dd=dims[d],du=dims[u],dv=dims[v],mask=new Int32Array(du*dv);
@@ -48,7 +57,7 @@ function rebuild(c){
   if(c.warps)warpP(c,P);
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(NM,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(CO,3));
   geo.setIndex(IX);if(c.warps)geo.computeVertexNormals();geo.computeBoundingSphere();
-  const mesh=new THREE.Mesh(geo,VM[c.mk]);mesh.castShadow=mesh.receiveShadow=true;mesh.userData.chunk=c;scene.add(mesh);hitMeshes.push(mesh);c.mesh=mesh}
+  const mesh=new THREE.Mesh(geo,VM[c.mk]);mesh.castShadow=mesh.receiveShadow=true;mesh.userData.chunk=c;freezeObj(mesh);scene.add(mesh);hitMeshes.push(mesh);c.mesh=mesh}
 function vh(x,y,z){const q=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return q-Math.floor(q)}
 function vnz(x,y,z){const ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z),fx=x-ix,fy=y-iy,fz=z-iz,sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy),sz=fz*fz*(3-2*fz);
   const L=(p,q,t)=>p+(q-p)*t,g=(i,j,k)=>vh(ix+i,iy+j,iz+k);

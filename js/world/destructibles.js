@@ -15,7 +15,7 @@ function decConv(k,i,quiet){
   const q=Math.round(b[7]/(Math.PI/2)),al=Math.abs(b[7]-q*Math.PI/2)<.06;
   if(!al&&k!=='g')return null;
   const odd=Math.abs(q)%2===1,hx=(odd?b[5]:b[3])/2,hy=b[4]/2,hz=(odd?b[3]:b[5])/2;
-  b.cv=1;E.im.setMatrixAt(i,new THREE.Matrix4().makeScale(0,0,0));E.im.instanceMatrix.needsUpdate=true;
+  b.cv=1;instHide(E.part[i]);
   if(k==='g'){glassMake(b,hx,hy,hz);return null}
   const mkq=k==='s'&&b[4]<=.03&&b[1]<.2, // tinta/faixa no piso: age como o concreto do piso
     vs=mkq&&(2*hx/.0125)*(2*hz/.0125)*Math.max(1,Math.round(2*hy/.0125))<=150000?.0125:(8*hx*hy*hz<=2.3?.025:.05),
@@ -41,7 +41,7 @@ function decFx(k,q,p,n,dir,cnt,s,quiet){
   voxFx(pt,nn,dd,cnt,b[6]+2,s,quiet);
   if(!quiet&&k==='s'&&!(b[4]<=.03&&b[1]<.2)){const rf=dd.clone().addScaledVector(nn,2*Math.max(0,-dd.dot(nn)));for(let j=0;j<8;j++)deb1(pt,rf,'spark',.007,6,.5);tn(1600+Math.random()*1000,1000,.1,.06,'triangle')}}
 function decImpact(h,n,dir){
-  const k=h.object.userData.decK,i=h.instanceId,E=DECK[k],b=E&&E.L[i];
+  const k=h.object.userData.decK,i=h.object.userData.decIdx[h.instanceId],E=DECK[k],b=E&&E.L[i];
   if(!b||b.cv)return false;
   const q=Math.round(b[7]/(Math.PI/2));if(k!=='g'&&Math.abs(b[7]-q*Math.PI/2)>=.06)return false;
   const r3=v=>[+v.x.toFixed(3),+v.y.toFixed(3),+v.z.toFixed(3)],r4=v=>[+v.x.toFixed(4),+v.y.toFixed(4),+v.z.toFixed(4)],
