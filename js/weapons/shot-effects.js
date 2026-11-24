@@ -20,7 +20,7 @@ function ac(){if(AC)return AC;try{AC=new (window.AudioContext||window.webkitAudi
   const nb=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
   const ns=AC.createBufferSource();ns.buffer=nb;ns.loop=true;
   const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=800;bp.Q.value=.5;BR=AC.createGain();BR.gain.value=0;ns.connect(bp);bp.connect(BR);BR.connect(MB);
-  const hz=AC.createGain();hz.gain.value=.006;ns.connect(hz);hz.connect(MB);ns.start();
+  ns.start(); // chiado contínuo de fundo removido (só o ruído da respiração, via BR, continua)
   }catch(e){}return AC;}
 ov.addEventListener('click',()=>{const A=ac();if(A&&A.state==='suspended')A.resume();if(A&&MB&&!window.__aw){window.__aw=1;const g=MB.gain.value;MB.gain.value=0;try{sfx('shot');sfx('imp');}catch(e){}setTimeout(()=>{MB.gain.value=g;},450);}});
 // som espacial: SPOS={x,z,k?} marca de onde o som sai. Volume cai com a distância até a câmera (k = rapidez da queda) e o som vai para o lado certo (estéreo).

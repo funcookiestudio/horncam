@@ -11,7 +11,7 @@ function introBegin(){
   INTRO.on=true;INTRO.t=0;INTRO.bs=tvG.scale.x;INTRO.bp.copy(tvG.position);
   INTRO.K=Math.max(2.4,(2*hh*menuCam.aspect/INTRO.bs)/260); // zoom até a tela CH 01 preencher a imagem
   GS.mode='intro';ov.classList.add('leaving');
-  try{tn(70,1100,INTRO.Z,.09,'sawtooth');tn(1800,3400,INTRO.Z,.014,'square');}catch(e){}
+  // som da transição removido
 }
 function introCancel(){ // Esc durante a transição: volta ao menu
   if(!INTRO.on)return;

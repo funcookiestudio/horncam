@@ -10,7 +10,7 @@ function startBoot(){
   aliveT=0;hudReady=false;hudEl.classList.remove('on');
   bootEl.classList.remove('go');void bootEl.offsetWidth;bootEl.classList.add('go');
   try{DA.back=true;DA.sig=1;DA.vis=1;}catch(e){}
-  try{nz(.3,.4,6000,1,1.5,.1,'highpass');tn(400,1600,.25,.06,'square');}catch(e){}
+  // som de iniciar removido
   clearTimeout(bootTm);bootTm=setTimeout(()=>{hudReady=true;bootEl.classList.remove('go');},1150);
 }
 ov.addEventListener('click',e=>{

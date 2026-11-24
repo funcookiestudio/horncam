@@ -61,5 +61,5 @@ function tvGain(){return OPT.tvl*.05} // 100% do controle = o volume que antes e
 {
   const tv=document.getElementById('opttv'),tvv=document.getElementById('opttvv');
   if(tv){const ui=()=>{tv.value=Math.round(OPT.tvl*100);tvv.textContent=OPT.tvl>.01?Math.round(OPT.tvl*100)+'%':'OFF'};ui();
-    tv.addEventListener('input',()=>{OPT.tvl=tv.value/100;ui();optApply();try{if(MA&&maOn)MA.out.gain.setTargetAtTime(tvGain(),MA.A.currentTime,.05)}catch(e){}});
+    tv.addEventListener('input',()=>{OPT.tvl=tv.value/100;ui();optApply();});
     document.getElementById('optbtn').addEventListener('click',ui)}}

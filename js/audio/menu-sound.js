@@ -67,7 +67,7 @@ function menuAudioTick(dt,on){
   if(on&&!MA)maInit();
   if(!MA)return;const A=MA.A;
   if(on&&A.state==='suspended'){try{A.resume();}catch(e){}}
-  if(on!==maOn){maOn=on;MA.out.gain.setTargetAtTime(on?tvGain():0,A.currentTime,on?.4:.08);}
+  if(on!==maOn){maOn=on;MA.out.gain.setTargetAtTime(0,A.currentTime,.08);}
   if(!on||A.state!=='running')return;
   const t=A.currentTime;
   MA.sg.gain.setTargetAtTime(.06+Math.random()*.1,t,.06);
@@ -170,9 +170,9 @@ dust.frustumCulled=false;scene.add(dust);
 // O facho (spot + cone + poeira) segue a direção real da lanterna/cano: ao recuar a arma perto de paredes, a luz gira junto com ela
 const FA_D=new THREE.Vector3();
 const bmg=new THREE.ConeGeometry(4.25,12,28,1,true);bmg.translate(0,-6,0);bmg.rotateX(Math.PI/2);
-const beam=new THREE.Mesh(bmg,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
+const beam=new THREE.Mesh(bmg,new THREE.ShaderMaterial({uniforms:{kf:{value:1}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
   vertexShader:'varying vec3 vn,vv;varying float vy;void main(){vy=clamp(-position.z/12.,0.,1.);vec4 mv=modelViewMatrix*vec4(position,1.);vn=normalMatrix*normal;vv=-mv.xyz;gl_Position=projectionMatrix*mv;}',
-  fragmentShader:'varying vec3 vn,vv;varying float vy;void main(){float f=abs(dot(normalize(vn),normalize(vv)));gl_FragColor=vec4(1.,.95,.8,pow(f,2.5)*(1.-vy)*.2);}'}));
+  fragmentShader:'uniform float kf;varying vec3 vn,vv;varying float vy;void main(){float f=abs(dot(normalize(vn),normalize(vv)));gl_FragColor=vec4(1.,.95,.8,pow(f,2.5)*(1.-vy)*.2*kf);}'}));
 beam.visible=false;beam.frustumCulled=false;gun.add(beam);beam.position.copy(FL_LENS); // cone de luz parte da lanterna da arma
 function fxTick(dt,sprint,sp){
   const k=r=>1-Math.exp(-dt*r);
