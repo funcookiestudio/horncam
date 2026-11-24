@@ -13,7 +13,7 @@ addEventListener('keydown',e=>{
  if(e.code==='F6'){perfShadows=!perfShadows;renderer.shadowMap.enabled=perfShadows;if(!perfShadows){renderer.shadowMap.autoUpdate=false;}else{renderer.shadowMap.autoUpdate=true;renderer.shadowMap.needsUpdate=true;}e.preventDefault();}
  if(e.code==='F7'){perfBypassPost=!perfBypassPost;e.preventDefault();}
  if(e.code==='F8'){perfVoxelsVisible=!perfVoxelsVisible;for(const c of vchunks)if(c.mesh)c.mesh.visible=perfVoxelsVisible;for(const b of VBATCH)b.visible=perfVoxelsVisible;e.preventDefault();}
- if(e.code==='Backslash'){const v=(post.uniforms.dbg.value+1)%5;post.uniforms.dbg.value=v;document.title='HORNCAM · pós: '+['completo','sem distorção/aberração','sem scanlines/ruído','sem vinheta','sem brilho de lente'][v];console.log('[post] diag',['completo','sem distorção/aberração','sem scanlines/ruído','sem vinheta','sem brilho de lente'][v]);e.preventDefault();}
+ if(e.code==='Backslash'){const v=(post.uniforms.dbg.value+1)%5;post.uniforms.dbg.value=v;document.title='ISLAND OF THE DEAD · pós: '+['completo','sem distorção/aberração','sem scanlines/ruído','sem vinheta','sem brilho de lente'][v];console.log('[post] diag',['completo','sem distorção/aberração','sem scanlines/ruído','sem vinheta','sem brilho de lente'][v]);e.preventDefault();}
  if(e.code==='F10'){gun.visible=!gun.visible;e.preventDefault();} // diagnóstico: esconde a arma
  if(e.code==='F9'){lensEffectsEnabled=!lensEffectsEnabled;if(!lensEffectsEnabled){const cv=document.getElementById('lens');if(cv){const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);}glareS=0;post.uniforms.glare.value=0;}e.preventDefault();}
 });
@@ -22,7 +22,7 @@ function perfReport(dt){
  const r=renderer.info.render,mem=renderer.info.memory;
  let lightCount=0,meshCount=0;scene.traverse(o=>{if(o.isLight)lightCount++;if(o.isMesh||o.isInstancedMesh)meshCount++;});
  const f=x=>x.toFixed(2)+' ms';
- perfPanel.textContent='HORNCAM / PERFIL DE DESEMPENHO (médias)\n'+
+ perfPanel.textContent='ISLAND OF THE DEAD / PERFIL DE DESEMPENHO (médias)\n'+
  'F5 luz das luminárias (volume): '+(perfVolLight?'LIGADA':'DESLIGADA')+' | F6 sombras: '+(perfShadows?'LIGADAS':'DESLIGADAS')+' | F7 pós-processo: '+(perfBypassPost?'IGNORADO':'ATIVO')+' | F8 voxels: '+(perfVoxelsVisible?'VISÍVEIS':'OCULTOS')+' | F9 efeitos lente: '+(lensEffectsEnabled?'ATIVOS':'DESLIGADOS')+'\n'+
  'CPU por quadro (amostra): '+f(perfTimes.total)+' | estimativa CPU: '+(perfTimes.total>0?(1000/perfTimes.total).toFixed(1):'--')+'\n'+
  'Lógica: '+f(perfTimes.logic)+' | rede: '+f(perfTimes.network)+' | efeitos: '+f(perfTimes.effects)+'\n'+
@@ -37,7 +37,7 @@ function updateSpatialDiagnostics(dt){
   let loaded=VBATCH.length,visible=0;for(const b of VBATCH)if(b.visible)visible++;for(const c of vchunks){if(c.mesh){loaded++;if(c.mesh.visible)visible++;}}
   const draw=info.render.calls||0;
   const mem=performance&&performance.memory?Math.round(performance.memory.usedJSHeapSize/1048576)+' MB':'n/d';
-  spdiagEl.textContent='HORNCAM / SPATIAL DIAGNOSTICS\\n'+
+  spdiagEl.textContent='ISLAND OF THE DEAD / SPATIAL DIAGNOSTICS\\n'+
     'FPS: '+fpsEl.textContent+'\\n'+
     'Voxel chunks mesh: '+loaded+' | visíveis: '+visible+'\\n'+
     'Células espaciais: sólidos '+spatialStats.solidCells+' / voxels '+spatialStats.voxelCells+'\\n'+

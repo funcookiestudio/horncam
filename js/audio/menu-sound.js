@@ -63,6 +63,7 @@ function maEvent(){
   }
 }
 function menuAudioTick(dt,on){
+  try{menuMusic(on)}catch(e){}
   if(on&&!MA)maInit();
   if(!MA)return;const A=MA.A;
   if(on&&A.state==='suspended'){try{A.resume();}catch(e){}}
@@ -122,6 +123,7 @@ function dispatchHit(h,dir){
   if(hitChunk(h)){voxImpact(h,n,dir.clone());return;}
   if(h.object.userData.glassG){glassImpact(h,n,dir.clone());return;}
   if(h.object.userData.decK&&decImpact(h,n,dir.clone()))return;
+  if(h.object.userData.doorIdx!==undefined&&doorImpact(h,n,dir.clone()))return;
   if(h.object.userData.rp){NET.hitPlayer(h.object.userData.rp,h.point,n);return;}
   if(h.object.userData.lampIM){hitLamp(h.instanceId);return;}
   const pp=[+h.point.x.toFixed(3),+h.point.y.toFixed(3),+h.point.z.toFixed(3)],pn=[+n.x.toFixed(3),+n.y.toFixed(3),+n.z.toFixed(3)];

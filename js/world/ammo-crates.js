@@ -126,8 +126,11 @@ function ammoBoxTick(dt){
 }
 
 function worldTick(dt){const k=1-Math.exp(-dt*4);
-  for(const d of doors){
-    if(d.gate){d.a+=((d.open?1:0)-d.a)*k;d.g.scale.y=Math.max(.04,1-d.a);
+  for(const d of doors){if(d.broken)continue;
+    if(d.gate){const tg=d.open?1:0,df=tg-d.a;                     // portão de enrolar: velocidade constante (~6,5 s), com som de corrente/metal
+      if(Math.abs(df)>.002){d.a+=Math.sign(df)*Math.min(Math.abs(df),dt/6.5);d.g.scale.y=Math.max(.04,1-d.a);d.mv=true;
+        d.sn=(d.sn||0)-dt;if(d.sn<=0){d.sn=.09+Math.random()*.08;sndAt({x:d.cx,z:d.cz},gateRattle)}}
+      else if(d.mv){d.mv=false;d.a=tg;d.g.scale.y=Math.max(.04,1-d.a);sndAt({x:d.cx,z:d.cz},()=>gateStop(d.open))}
       if(d.open&&d.sOn&&d.a>.8){const i=solids.indexOf(d.sol);if(i>=0)solids.splice(i,1);d.sOn=false;}}
     else{d.a+=((d.open?1.75:0)-d.a)*k;d.g.rotation.y=d.sw*d.a;}}
   abUse=-1;camera.getWorldDirection(vf);

@@ -75,15 +75,21 @@ function warpMetal(P,R){
   const sd=vh(P.x,P.y,P.z);
   for(const e of list.slice(0,10)){const c=e[1];
     if(!c.a)voxAlloc(c);
-    (c.warps=c.warps||[]).push({x:P.x,y:P.y,z:P.z,R:RI,ang:(sd<.5?-1:1)*(1.3+sd*1.6),amp:R*.3,sd:sd*40});if(c.warps.length>4)c.warps.shift();
+    (c.warps=c.warps||[]).push({x:P.x,y:P.y,z:P.z,R:RI,ang:(sd<.5?-1:1)*(1.3+sd*1.6),amp:R*(c.door?.4:.3),cap:c.door?.5:.4,sd:sd*40});if(c.warps.length>4)c.warps.shift();
     if(DEFER)DIRTY.add(c);else RBQ.add(c)}}
 function warpP(c,P){
+  if(c.lips)for(const L of c.lips){   // furo de bala em chapa: borda levantada no lado de saída (e leve afundamento na entrada)
+    for(let i=0;i<P.length;i+=3){
+      const rx=P[i]-L.x,ry=P[i+1]-L.y,rz=P[i+2]-L.z,al=rx*L.dx+ry*L.dy+rz*L.dz,px=rx-L.dx*al,py=ry-L.dy*al,pz=rz-L.dz*al,d=Math.hypot(px,py,pz);
+      if(d>.12)continue;const t=1-d/.12,k=t*t*(3-2*t);
+      if(al>L.T*.5){const h=.026*k,fl=.007*k/Math.max(d,.01);P[i]+=L.dx*h+px*fl;P[i+1]+=L.dy*h+py*fl;P[i+2]+=L.dz*h+pz*fl}
+      else{const h=.008*k;P[i]+=L.dx*h;P[i+1]+=L.dy*h;P[i+2]+=L.dz*h}}}
   for(const w of c.warps){
     for(let i=0;i<P.length;i+=3){
       const x=P[i],y=P[i+1],z=P[i+2],dx=x-w.x,dy=y-w.y,dz=z-w.z,r=Math.hypot(dx,dy,dz);if(r>=w.R)continue;
       const t=1-r/w.R,k=t*t*(3-2*t),A=w.amp*k,
         // campo suave: empurrão radial (para fora do centro), intensidade varia devagar -> a peça entorta inteira, sem rasgar
-        mag=Math.min(.4,A*(.5+.9*vnz(x*1.4+w.sd,y*1.4,z*1.4)+.2*vnz(x*4+w.sd,y*4,z*4))),
+        mag=Math.min(w.cap||.4,A*(.5+.9*vnz(x*1.4+w.sd,y*1.4,z*1.4)+.2*vnz(x*4+w.sd,y*4,z*4))),
         ii=mag/Math.max(r,w.R*.35); // perto do centro a direção não oscila
       P[i]=x+dx*ii;P[i+1]=Math.max(.1,y+dy*ii);P[i+2]=z+dz*ii}}}
 

@@ -186,7 +186,6 @@ const SPAWN_LIST=[];[[0,21],[0,-21],[-19,5],[15,5],[-6,20],[5,-19.5]].forEach(p=
   RK.forEach((x,i)=>{sign('R'+(i+1),x,5.2,RZ0-.1,Math.PI,.9,.5,'#ffffff','#1f5fae');sign('R'+(i+1),x,5.2,RZ0+NU*RU+.1,0,.9,.5,'#ffffff','#1f5fae')});
   [[0,6.1,-18.2,5],[-7.5,6.4,-16.6,5],[14,6.1,-17,5],[14,6.1,2.2,5]].forEach(([x,y,z,w])=>{[-1,1].forEach(a=>D('s',x+a*w*.4,(y+.7+7.3)/2,z,.04,7.3-y-.7,.04,0x333333))});
   sign('SAÍDA',-19.9,3.2,-9,Math.PI/2,.9,.4,'#2e7d32','#ffffff');sign('EPI OBRIGATÓRIO',19.9,2.6,6,-Math.PI/2,1.0,.5,'#1f5fae','#ffffff');
-  {const cg=new THREE.CylinderGeometry(.4,.4,.06,28);cg.rotateX(Math.PI/2);const m=new THREE.Mesh(cg,new THREE.MeshBasicMaterial({color:0xf4f4f0}));m.position.set(TX(2.5),4.2,TZ(24.89));scene.add(m)}
 
   EMD.forEach(([ex,ez])=>{const n=(ex<0?1:-1)*WS,hz=TZ(ez-.6);
     [-.64,.64].forEach(a=>D('s',ex,1.15,ez+a,.24,2.1,.08,0x555b61));D('s',ex,2.24,ez,.24,.08,1.36,0x555b61);

@@ -5,7 +5,7 @@
 //  · bibliotecas de CDN (three, peerjs, loaders): cache primeiro (as URLs são versionadas)
 //  · multiplayer (PeerJS/WebRTC/WebSocket) não passa pelo cache; offline só o modo solo funciona
 // Mudou a estrutura de cache? Aumente VERSION: os caches antigos são apagados na ativação.
-const VERSION='horncam-v1';
+const VERSION='horncam-v2';
 const SHELL=VERSION+'-shell',LIBS=VERSION+'-libs';
 const CDN=/^https:\/\/(cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|unpkg\.com)\//;
 const OPTIONAL=['assets/MK4 Tactical.obj','assets/MK4 Tactical.mtl']; // modelo da arma (se existir no servidor)

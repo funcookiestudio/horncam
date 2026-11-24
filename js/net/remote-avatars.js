@@ -6,6 +6,11 @@ function mkTag(name){const c=document.createElement('canvas');c.width=256;c.heig
   g.strokeText(name,128,32);g.fillStyle='#e8e8e8';g.fillText(name,128,32);
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
   s.scale.set(1.1,.275,1);s.position.y=2.1;return s;}
+// tarja de censura (mosaico de pixels, como nas imagens de body cam): cobre o rosto dos outros jogadores
+const CENSOR=(()=>{const c=document.createElement('canvas');c.width=8;c.height=6;const g=c.getContext('2d');
+  for(let y=0;y<6;y++)for(let x=0;x<8;x++){const v=70+Math.random()*95|0,w=(y===2||y===3)?.75:1;g.fillStyle='rgb('+(v*w*1.04|0)+','+(v*w|0)+','+(v*w*1.08|0)+')';g.fillRect(x,y,1,1)}
+  const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;
+  return new THREE.MeshStandardMaterial({map:t,roughness:1,metalness:0})})();
 function mkAvatar(id,name,slot){
   const g=new THREE.Group(),bodyG=new THREE.Group();g.add(bodyG);
   const vest=MT(SLOTCOL[slot%4],.85,.05),pants=MT(0x2b2f27,.9,0);
@@ -14,6 +19,7 @@ function mkAvatar(id,name,slot){
   bx(.46,.58,.27,0,1.13,0,vest,up);bx(.4,.1,.25,0,.83,0,blk,up);bx(.3,.34,.06,0,1.18,.15,gry,up);
   const hd=new THREE.Group();hd.position.set(0,1.46,0);up.add(hd);
   bx(.2,.22,.22,0,.11,0,SKIN,hd);
+  {const cs=new THREE.Mesh(new THREE.BoxGeometry(.235,.2,.05),CENSOR);cs.position.set(0,.105,-.118);hd.add(cs)}   // mosaico sobre o rosto
   const hl=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),HELM);hl.scale.set(.15,.13,.17);hl.position.set(0,.2,0);hd.add(hl);
   bx(.2,.05,.06,0,.14,-.12,blk,hd);bx(.04,.05,.07,.12,.2,-.04,gry,hd);
   const ar=new THREE.Group();ar.position.set(0,1.36,0);up.add(ar);

@@ -20,6 +20,7 @@ function handle(m){
     case 'vi':{SV=attn(m.p[0],m.p[2]);voxFx(new V3(...m.p),new V3(...m.n),new V3(...m.d),m.c,m.b|0,m.s,false);SV=1;break;}
     case 'di':{SV=attn(m.p[0],m.p[2]);decFx(m.k,m.q,m.p,m.n,m.d,m.c,m.s,false);SV=1;break;}
     case 'sr':{SV=attn(m.p[0],m.p[2]);steelFx(new V3(...m.p),new V3(...m.n),new V3(...m.d),false);SV=1;break;}
+    case 'dh':{const d=doors[m.i];if(d&&!d.broken){SV=attn(m.p[0],m.p[2]);const P_=new V3(...m.p),N_=new V3(...m.n);doorBullet(d,P_,N_,m.s);propFx(P_,N_);SV=1}break;}
     case 'pi':{SV=attn(m.p[0],m.p[2]);propFx(new V3(...m.p),new V3(...m.n));SV=1;break;}
     case 'bl':{NET.lastBy=f;SV=Math.min(1,attn(m.p[0],m.p[2])*3);blast(new V3(...m.p),m.r,new V3(...m.n),m.s,false);SV=1;break;}
     case 'lp':{const L=lamps[m.i];if(L){SV=attn(L.p.position.x,L.p.position.z);breakLamp(m.i,false);SV=1;}break;}

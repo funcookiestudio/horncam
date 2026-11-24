@@ -12,6 +12,7 @@ function shatter(b,hx,hy,hz){
   nz(.35,.6,5500,2,2.2,.25,'highpass');tn(3200,1800,.15,.08,'triangle')}
 function decConv(k,i,quiet){
   const E=DECK[k],b=E&&E.L[i];if(!b||b.cv)return null;
+  if(b.door&&(b.door.a>.02||b.door.broken))return null;      // porta/portão aberto ou em movimento não vira voxel
   const q=Math.round(b[7]/(Math.PI/2)),al=Math.abs(b[7]-q*Math.PI/2)<.06;
   if(!al&&k!=='g')return null;
   const odd=Math.abs(q)%2===1,hx=(odd?b[5]:b[3])/2,hy=b[4]/2,hz=(odd?b[3]:b[5])/2;
@@ -19,7 +20,8 @@ function decConv(k,i,quiet){
   if(k==='g'){glassMake(b,hx,hy,hz);return null}
   const mkq=k==='s'&&b[4]<=.03&&b[1]<.2, // tinta/faixa no piso: age como o concreto do piso
     vs=mkq&&(2*hx/.0125)*(2*hz/.0125)*Math.max(1,Math.round(2*hy/.0125))<=150000?.0125:(8*hx*hy*hz<=2.3?.025:.05),
-    c=mkChunk(new V3(b[0]-hx,b[1]-hy,b[2]-hz),new V3(b[0]+hx,b[1]+hy,b[2]+hz),'conc',decMat(mkq?'m':k,b[6]),vs);
+    c=mkChunk(new V3(b[0]-hx,b[1]-hy,b[2]-hz),new V3(b[0]+hx,b[1]+hy,b[2]+hz),'conc',b.mkKey||decMat(mkq?'m':k,b[6]),vs);
+  if(b.door){c.door=true;c.uvf=b.uvf;doorPlateToChunk(b.door,c)}b.ch=c;
   c.free=true;c.hard=mkq?.35:DMAT[k].hard;if(k==='m'&&!mkq&&Math.min(2*hx,2*hy,2*hz)>=.35)c.hollow=true; // caixa/carga: oca (casca de 1 voxel)
   c.paint=!!mkq;c.dcode=b[6]+2;
   spatialInsert(spatialVoxels,c,c.min.x,c.max.x,c.min.z,c.max.z);return c}
@@ -37,8 +39,11 @@ function decBlast(pt,R,quiet){
 function decFx(k,q,p,n,dir,cnt,s,quiet){
   const i=decFind(k,q);if(i<0)return;const b=DECK[k].L[i];
   if(!b.cv)decConv(k,i,quiet);
+  if(!b.cv)return;
   const pt=new V3(...p),nn=new V3(...n),dd=new V3(...dir);
   if(k==='g'){const G=GLP.get(b);if(G)glassHit(G,pt,dd,s,quiet);return}
+  if(b.door&&b.ch){const c=b.ch,T=Math.min(c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z),dn=dd.clone().normalize();   // ressalto do furo: do lado de saída da bala o metal se levanta
+    (c.lips=c.lips||[]).push({x:pt.x,y:pt.y,z:pt.z,dx:dn.x,dy:dn.y,dz:dn.z,T});if(c.lips.length>16)c.lips.shift();c.warps=c.warps||[]}
   voxFx(pt,nn,dd,cnt,b[6]+2,s,quiet);
   if(!quiet&&k==='s'&&!(b[4]<=.03&&b[1]<.2)){const rf=dd.clone().addScaledVector(nn,2*Math.max(0,-dd.dot(nn)));for(let j=0;j<8;j++)deb1(pt,rf,'spark',.007,6,.5);tn(1600+Math.random()*1000,1000,.1,.06,'triangle')}}
 function decImpact(h,n,dir){

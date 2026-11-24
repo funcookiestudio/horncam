@@ -54,8 +54,9 @@ function rebuild(c){
         for(let y=0;y<h;y++)for(let t=0;t<w;t++)mask[(j+y)*du+i+t]=0;
         emitW(d,u,v,sg,k+(sg>0?1:0),i,j,w,h,m);i+=w}}}
   if(!P.length)return;
+  let UV=null;if(c.uvf){UV=[];for(let i=0;i<P.length;i+=3){const t=c.uvf(P[i],P[i+1],P[i+2]);UV.push(t[0],t[1])}}
   if(c.warps)warpP(c,P);
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(NM,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(CO,3));
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(NM,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(CO,3));if(UV)geo.setAttribute('uv',new THREE.Float32BufferAttribute(UV,2));
   geo.setIndex(IX);if(c.warps)geo.computeVertexNormals();geo.computeBoundingSphere();
   const mesh=new THREE.Mesh(geo,VM[c.mk]);mesh.castShadow=mesh.receiveShadow=true;mesh.userData.chunk=c;freezeObj(mesh);scene.add(mesh);hitMeshes.push(mesh);c.mesh=mesh}
 function vh(x,y,z){const q=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return q-Math.floor(q)}
