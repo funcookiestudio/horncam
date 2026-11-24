@@ -13,8 +13,7 @@ function maInit(){
   // zumbido elétrico 60/120 Hz + apito agudo de CRT + drone grave dissonante
   const mk=(type,f,g,flt)=>{const o=A.createOscillator(),gg=A.createGain();o.type=type;o.frequency.value=f;gg.gain.value=g;
     if(flt){const lf=A.createBiquadFilter();lf.type='lowpass';lf.frequency.value=flt;o.connect(lf);lf.connect(gg);}else o.connect(gg);gg.connect(out);o.start();return o;};
-  mk('sawtooth',60,.035,300);mk('sine',120,.03);mk('sine',15734,.004);
-  mk('sawtooth',41,.05,140);const dr=mk('sawtooth',43.3,.05,140);
+  const dr={frequency:{setTargetAtTime(){}}};   // só o chiado: sem zumbido, apito nem drone
   MA={A,out,sg,bp,dr};
 }
 function maBurst(dur,g,f0,f1,q=.6){const {A,out}=MA,t=A.currentTime;
@@ -73,7 +72,7 @@ function menuAudioTick(dt,on){
   MA.sg.gain.setTargetAtTime(.06+Math.random()*.1,t,.06);
   MA.bp.frequency.setTargetAtTime(1800+Math.random()*2400,t,.08);
   MA.dr.frequency.setTargetAtTime(43+Math.sin(t*.3)*1.2,t,.5);
-  maNext-=dt;if(maNext<=0){maNext=4+Math.random()*9;maEvent();}
+  maNext-=dt;if(maNext<=0){maNext=4+Math.random()*9;maGlitchTV();}   // só o efeito visual de falha; sem sons de transição
 }
 // o navegador só libera áudio depois de um gesto do jogador
 ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>{try{maInit();MA&&MA.A.state==='suspended'&&MA.A.resume();}catch(x){}},{passive:true}));
@@ -138,7 +137,8 @@ function penBounds(h){const c=hitChunk(h);
 function exitPoint(p,d,bd){let t=1e9;
   for(const ax of ['x','y','z']){const v=d[ax];if(Math.abs(v)<1e-6)continue;const tt=((v>0?bd.mx[ax]:bd.mn[ax])-p[ax])/v;if(tt>0&&tt<t)t=tt}
   return p.clone().addScaledVector(d,Math.min(t,3))}
-function hit(){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02;
+var SGSP=1; // multiplicador de dispersão (chumbos da espingarda)
+function hit(){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02*SGSP;
   rc.setFromCamera({x:(Math.random()-.5)*spr,y:(Math.random()-.5)*spr},camera);
   const dir=rc.ray.direction.clone();
   let h=spatialRaycast(rc,hitMeshes.concat(decorHit),false)[0];tracer(h?h.point:rc.ray.at(60,new V3()));

@@ -85,7 +85,7 @@ function update(dt){
   let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x;
   if(PH.dead){f=0;s=0;}
   const m=Math.hypot(f,s); if(m>1){f/=m;s/=m;}
-  const sprint=(keys.ShiftLeft||keys.ShiftRight||input.sprint||joy.run)&&!P.crouch&&f>0;
+  const sprint=(keys.ShiftLeft||keys.ShiftRight||input.sprint||joy.run)&&!P.crouch&&f>0;P.sprinting=!!sprint;
   const jump=(keys.Space||input.jump)&&!PH.dead; input.jump=false;
   const speed=(P.crouch?1.7:(sprint?6.2:3.4))*(1-W.ads*.4);
   // velocidade com aceleração
@@ -122,8 +122,8 @@ function update(dt){
   const wk=wakeCam(dt);
   camera.rotation.x=P.camPitch+Math.sin(P.bobT*2)*.012*amp-P.landKick*.8+wk.p;
   camera.rotation.z=Math.cos(P.bobT)*.02*amp+lagRoll+P.aimTilt+DR+wk.r;
-  camera.fov+=((sprint?86:80-W.ads*20)+wk.f-camera.fov)*(1-Math.exp(-dt*6)); camera.updateProjectionMatrix();
-  weaponUpdate(dt,sprint,sp,amp);
+  camera.fov+=((sprint?86:80)+wk.f-camera.fov)*(1-Math.exp(-dt*6)); camera.updateProjectionMatrix();
+  weaponUpdate(dt,sprint,sp,amp);sgUpdate(dt);rvUpdate(dt);
   post.uniforms.shake.value=amp+P.landKick*10+W.rk*20+BSH*25;
   spdEl.textContent=P.crouch?'CROUCH':sprint?'SPRINT':sp>.5?'WALK':'IDLE';
 }

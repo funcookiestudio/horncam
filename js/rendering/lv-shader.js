@@ -24,10 +24,10 @@ float lvN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(lvH(
 vec3 lvGrime(vec3 col,vec3 p,vec3 n){
   float up=smoothstep(.75,.95,n.y),low=1.-smoothstep(0.,1.6,p.y);
   float big=lvN(p.xz*.35+p.y*.1),mid=lvN(p.xz*1.7+vec2(p.y*2.1,0.)),fine=lvN(p.xz*7.+p.y*5.);
-  float stain=smoothstep(.4,1.,big)*(.5+.5*mid);                    // borda larga = umidade difusa, sem recorte duro
-  float mold=low*smoothstep(.4,.9,mid)*(1.-up*.5);
-  float drip=smoothstep(.45,1.,lvN(vec2((p.x+p.z)*3.,p.y*.25)))*(1.-smoothstep(.2,.6,abs(n.y)));
-  col*=1.-.15*stain*(.55+.45*lvN(p.xz*13.+p.y*3.))-.15*(1.-fine)*(.3+.7*up)-.09*drip;
+  float stain=0.;                    // borda larga = umidade difusa, sem recorte duro
+  float mold=0.;
+  float drip=0.;
+  col*=1.-.15*stain*(.55+.45*lvN(p.xz*13.+p.y*3.));
   col=mix(col,col*vec3(.86,.76,.6),stain*.4);                       // mancha = sujeira amarronzada, não sombra
   col=mix(col,col*vec3(.55,.78,.42),mold*.75);
   vec2 g=floor(p.xz/7.);float hv=lvH(g+.5);

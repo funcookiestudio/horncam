@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HORNCAM FPV · Centro Logístico</title>
+<meta name="description" content="Jogo de terror em primeira pessoa pela câmera de capacete: galpões destrutíveis, lanterna e silêncio.">
+<meta name="theme-color" content="#090d0a">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HORNCAM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/hud.css">
 <link rel="stylesheet" href="css/menu.css">
@@ -39,6 +49,8 @@
   <!-- topo direita: utilidades -->
   <div class="btn xs t" data-a="mode" style="--x:16px;--y:74px"><span id="modeLbl">AUTO</span></div>
   <div class="btn xs t" data-a="sight" style="--x:64px;--y:74px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.2"/></svg><span>MIRA</span></div>
+  <div class="btn xs t" data-a="wswap" style="--x:208px;--y:74px"><svg viewBox="0 0 24 24"><path d="M3 12h14l3-2v4l-3-2"/><path d="M7 12v5M12 12v3"/></svg><span>ARMA</span></div>
+  <div class="btn xs t" data-a="wswap2" style="--x:256px;--y:74px"><svg viewBox="0 0 24 24"><path d="M3 10h12l2-2h3v5h-3l-1 3h-3l-1-3H3z"/></svg><span>.357</span></div>
   <div class="btn xs t" data-a="light" style="--x:112px;--y:74px"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span>LUZ</span></div>
   <div class="btn xs t" id="btn-boom" style="--x:160px;--y:74px"><svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M12 8V4l3-1"/></svg><span>EXP</span></div>
   <!-- esquerda: inclinar -->
@@ -74,6 +86,8 @@
     <div class="row"><span>SUJEIRA</span><button id="optdirt" type="button">LIGADO</button></div>
     <div class="row"><span>LENTE SUJA</span><input id="optlens" type="range" min="0" max="100" step="5"><span id="optlensv"></span></div>
     <div class="row"><span>TVs (ESTÁTICA)</span><input id="opttv" type="range" min="0" max="100" step="5"><span id="opttvv"></span></div>
+    <div class="row" id="pwarow" hidden><span>APP</span><button id="optinstall" type="button">INSTALAR</button></div>
+    <p class="hint" id="pwahint" hidden>iPhone/iPad: toque em Compartilhar › Adicionar à Tela de Início.</p>
     <div class="row"><span>AMBIENTE</span><button id="opthorror" type="button">LIGADO</button></div>
     <p class="hint">Se o jogo ficar pesado, desligue REFLEXOS e SUJEIRA.</p>
     <div class="row"><span>AJUDA</span><button id="helpbtn" type="button">COMO JOGAR</button></div>
@@ -88,7 +102,7 @@
     <h3>COMBATE</h3>
     <dl><dt>Mouse</dt><dd>olhar</dd><dt>Clique</dt><dd>atirar</dd><dt>Botão dir.</dt><dd>mirar</dd><dt>R</dt><dd>recarregar</dd><dt>B</dt><dd>modo de tiro</dd><dt>Shift (mirando)</dt><dd>segurar o fôlego</dd></dl>
     <h3>EQUIPAMENTO</h3>
-    <dl><dt>1</dt><dd>lanterna</dd><dt>2 / V</dt><dd>mira holográfica</dd><dt>3</dt><dd>lança-granadas</dd><dt>T</dt><dd>preparar munição explosiva (lançador equipado, 3 cargas)</dd><dt>I</dt><dd>inspecionar arma</dd></dl>
+    <dl><dt>1</dt><dd>lanterna</dd><dt>2 / V</dt><dd>mira holográfica</dd><dt>3</dt><dd>lança-granadas</dd><dt>4</dt><dd>Winchester (espingarda)</dd><dt>5</dt><dd>revólver .357</dd><dt>T</dt><dd>preparar munição explosiva (lançador equipado, 3 cargas)</dd><dt>I</dt><dd>inspecionar arma</dd></dl>
     <h3>INTERAÇÃO</h3>
     <dl><dt>G</dt><dd>abrir porta / pegar munição</dd></dl>
     <h3>TESTE</h3>
@@ -150,6 +164,9 @@
 <script src="js/net/network.js"></script>
 <script src="js/net/spawn-death.js"></script>
 <script src="js/ui/lobby.js"></script>
+<script src="js/weapons/shotgun.js"></script>
+<script src="js/weapons/revolver.js"></script>
+<script src="js/pwa.js"></script>
 <script src="js/rendering/shader-warmup.js"></script>
 <script src="js/ui/touch-controls.js"></script>
 </body>

@@ -140,7 +140,7 @@ const W={ads:0,sp:0,aim:false,trig:false,cd:0,mag:30,res:120,rl:false,t:0,pt:0,e
 const WA={inspectT:-1,switchT:-1,switchFrom:false,switchTo:true,grenadeKick:0,grenadeRecover:0};
 const easeOut3=t=>1-Math.pow(1-Math.max(0,Math.min(1,t)),3);
 const ammoEl=document.getElementById('ammo');
-const updAmmo=()=>{ammoEl.textContent='MK4 TACTICAL '+W.mag+'/'+W.res+' '+(W.auto?'AUTO':'SEMI')+(W.hs?' | HOLO':'')+' | LUZ '+(flashOn?'ON':'OFF')+' | GL '+(launcherEquipped?'ON':'OFF')+' | EXP '+blastAmmo+'/3'+(grenadeReady?' [PRONTO]':grenadeLoading?' [CARREGANDO]':'');};
+const updAmmo=()=>{if(typeof RVL!=='undefined'&&RVL.on){ammoEl.textContent='REVÓLVER .357 '+W.mag+'/'+W.res+' | SEMI | LUZ '+(flashOn?'ON':'OFF');return}if(typeof SG!=='undefined'&&SG.on){ammoEl.textContent='WINCHESTER M12 '+W.mag+'/'+W.res+' | PUMP | LUZ '+(flashOn?'ON':'OFF');return}ammoEl.textContent='MK4 TACTICAL '+W.mag+'/'+W.res+' '+(W.auto?'AUTO':'SEMI')+(W.hs?' | HOLO':'')+' | LUZ '+(flashOn?'ON':'OFF')+' | GL '+(launcherEquipped?'ON':'OFF')+' | EXP '+blastAmmo+'/3'+(grenadeReady?' [PRONTO]':grenadeLoading?' [CARREGANDO]':'');};
 let SV=1;
 let AC; function snd(d,g){try{AC=AC||new AudioContext();const n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);const s=AC.createBufferSource(),G=AC.createGain();G.gain.value=g;s.buffer=b;s.connect(G);G.connect(mg(AC));s.start();}catch(e){}}
 const ss=(a,b,t)=>{t=Math.max(0,Math.min(1,(t-a)/(b-a)));return t*t*(3-2*t);};
@@ -306,9 +306,9 @@ function weaponUpdate(dt,sprint,sp,amp){
   // gradualmente ao concluir a animação.
   const launcherReloadPose=grenadeMode&&grenadeLoading
     ? ss(.08,.42,loadT)*(1-ss(1.72,2.02,loadT)) : 0;
-  gun.position.set(-.1*h+.08*p-.02*s+bX+cl((W.ly-P.yaw)*.25,.04)+.012*launcherReloadPose,
-    -.34+.252*a+.15*p-.05*s+bY+br-P.landKick*1.2+cl((W.lp-P.pitch)*.25,.04)-.008*launcherReloadPose,
-    -.46+.14*a+.04*s+W.rz*(1-a*.5));
+  gun.position.set(-.1*(1-.55*a)+.08*p-.02*s+bX+cl((W.ly-P.yaw)*.25,.04)+.012*launcherReloadPose,
+    -.34+.115*a+.15*p-.05*s+bY+br-P.landKick*1.2+cl((W.lp-P.pitch)*.25,.04)-.008*launcherReloadPose,
+    -.46+.05*a+.04*s+W.rz*(1-a*.5));
   gun.rotation.set(W.rk*1.5+.22*p-.35*s+cl((W.lp-P.pitch)*.8,.12)+Math.sin(P.bobT*2)*.01*amp+.075*launcherReloadPose,
     .7*s+cl((W.ly-P.yaw)*.8,.15)+.12*launcherReloadPose,
     -.4*p+.15*s-.19*launcherReloadPose);
@@ -351,7 +351,7 @@ function weaponUpdate(dt,sprint,sp,amp){
   }
   camera.rotation.x+=W.rk*.5;
   fxPost(dt,a);
-  const tH=Math.tan(camera.fov*Math.PI/360)*camera.aspect; helm.position.x=-((.8+.5*a)*tH*.15+.055);
+  const tH=Math.tan(camera.fov*Math.PI/360)*camera.aspect; helm.position.x=-(.8*tH*.15+.055);
 }
 // capacete: camera presa ao lado direito dele, casco aparece na borda esquerda
 const helm=new THREE.Group(); camera.add(helm);

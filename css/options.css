@@ -18,3 +18,5 @@
 #optrefl,#optdirt{display:block;flex:none;font:bold 13px "Courier New",monospace;letter-spacing:.2em;color:var(--fg);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.5);padding:8px 12px;cursor:pointer}
 #optrefl.on,#optdirt.on{background:#e22;border-color:#e22;color:#fff}
 #optdarkv,#optreflv{min-width:44px;text-align:right}
+
+.row[hidden],.hint[hidden]{display:none!important}
