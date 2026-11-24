@@ -9,7 +9,7 @@ function expo(dt){let L=0;for(const q of LREG.nearLamps()){if(q.off&&q.fz<=0)con
   L=Math.min(1,L+(flashOn?.35:0));const T=(1.5-.7*L)*(typeof VIS!=='undefined'?VIS.exp:1);EXPO+=(T-EXPO)*(1-Math.exp(-dt*(T<EXPO?2.5:.8)));}
 // audio
 let MB,RV,BR;
-function ac(){if(AC)return AC;try{AC=new (window.AudioContext||window.webkitAudioContext)();
+function ac(){if(AC)return AC;try{AC=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'balanced'}); // buffer maior que o 'interactive': evita estalos no celular
   const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5200;
   const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=90;
   const cm=AC.createDynamicsCompressor();cm.threshold.value=-18;cm.ratio.value=6;

@@ -62,16 +62,17 @@ try{const o=JSON.parse(localStorage.getItem('horncam_opt')||'{}');if(typeof o.mu
         [5,21,37,53].forEach(t=>[92.5,98,130.8].forEach(f=>E.tone(t+o,f,'sawtooth',.07,4,5,0,bl)));
         [7,19,33,47].forEach(t=>E.nz(t+o,1.2,1,.06,'bandpass',1200,15,0));
         [14,44].forEach(t=>bell(E,t+o,185,.05,0))})}}};
-  const ORDER=['pulsar','corr','algo','caca'],buf={},st={};let rendering=false,cur=null,nextAt=0;
+  const ORDER=['pulsar','corr','algo','caca'],buf={},st={};let rendering=false,cur=null,nextAt=0,pumpAt=0;
   async function render(id){
     const oc=new OfflineAudioContext(2,SR*2*L,SR),E=eng(oc);T[id].build(E);
     const r=await oc.startRendering(),out=new AudioBuffer({length:SR*L,numberOfChannels:2,sampleRate:SR});let peak=0;
     for(let c=0;c<2;c++){const a=r.getChannelData(c),o=out.getChannelData(c);for(let k=0;k<SR*L;k++){o[k]=a[SR*L+k];peak=Math.max(peak,Math.abs(o[k]))}}
     const k=.9*T[id].lvl/peak;for(let c=0;c<2;c++){const o=out.getChannelData(c);for(let j=0;j<o.length;j++)o[j]*=k}
     return out}
+  // intervalo entre faixas: a síntese disputa CPU com o áudio e causava estalos no celular
   function pump(){ // renderiza uma faixa por vez, em segundo plano: primeiro a do menu, depois as da partida
-    if(rendering)return;const id=ORDER.find(i=>!buf[i]);if(!id)return;
-    rendering=true;render(id).then(b=>{buf[id]=b;rendering=false}).catch(()=>{rendering=false;buf[id]=null;ORDER.splice(ORDER.indexOf(id),1)})}
+    if(rendering||performance.now()<pumpAt)return;const id=ORDER.find(i=>!buf[i]);if(!id)return;
+    rendering=true;render(id).then(b=>{buf[id]=b;rendering=false;pumpAt=performance.now()+(buf.pulsar&&id!=='pulsar'?30:8)*1e3}).catch(()=>{rendering=false;buf[id]=null;ORDER.splice(ORDER.indexOf(id),1)})}
   function start(A,id,rand){
     const g=A.createGain();g.gain.value=0;g.connect(mg(A));const s=A.createBufferSource();s.buffer=buf[id];s.loop=true;s.connect(g);
     s.start(0,rand?R(0,L):0);st[id]={s,g}}
