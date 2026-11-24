@@ -11,9 +11,9 @@
 #opt button{font:bold 13px "Courier New",monospace;letter-spacing:.2em;color:var(--fg);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.4);padding:8px 12px;cursor:pointer;touch-action:manipulation;border-radius:0}
 #opt button:hover{background:rgba(255,255,255,.16)}
 #opt button:active{background:#fff;border-color:#fff;color:#000}
-#optmute,#optrefl,#optdirt,#optfps,#opthorror,#opted,#helpbtn{display:block;flex:none;width:136px;text-align:center;box-sizing:border-box;margin:0}
-#opted,#helpbtn{width:auto;min-width:136px}
-#optmute.on,#optrefl.on,#optdirt.on,#optfps.on,#opthorror.on{background:#e8e8e8;border-color:#e8e8e8;color:#000}
+#optmute,#optrefl,#optdirt,#optfps,#optmic,#opthorror,#opted,#helpbtn{display:block;flex:none;width:136px;text-align:center;box-sizing:border-box;margin:0}
+#opted,#helpbtn,#optmicp{width:auto;min-width:136px}
+#optmute.on,#optrefl.on,#optdirt.on,#optfps.on,#optmic.on,#opthorror.on{background:#e8e8e8;border-color:#e8e8e8;color:#000}
 #opt .vb{flex:none;width:40px;height:40px;padding:0;font-size:20px;line-height:1}
 #optv,#optdarkv,#optreflv{min-width:44px;text-align:right}
 #opt .hint{margin:6px 0 0;font-size:11px;letter-spacing:.12em;opacity:.5;text-align:left}

@@ -20,6 +20,7 @@ function introCancel(){ // Esc durante a transição: volta ao menu
 }
 function introTick(dt){ // início de cada quadro: avança o relógio e, ao terminar, entrega o jogo ao jogador
   outroTick(dt);
+  try{interfTick(dt)}catch(e){}
   if(!INTRO.on)return;
   INTRO.t+=dt;if(INTRO.t<INTRO.Z)return;
   INTRO.on=false;GS.mode='play';
