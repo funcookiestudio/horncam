@@ -14,7 +14,7 @@ function startBoot(){
   clearTimeout(bootTm);bootTm=setTimeout(()=>{hudReady=true;bootEl.classList.remove('go');},1150);
 }
 ov.addEventListener('click',e=>{
-  if(e.target.closest('#lobby,#helpbtn,#optbtn'))return;
+  if(!e.target.closest('#startbtn'))return; // só o botão INICIAR começa o jogo
   if(GS.mode!=='menu')return;
   // o pedido de captura do mouse precisa nascer do toque/clique do usuário; a transição roda depois
   if(!isTouch&&canvas.requestPointerLock)canvas.requestPointerLock();
