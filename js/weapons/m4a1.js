@@ -33,7 +33,7 @@ function loadMK4Tactical(){
       const bounds=new THREE.Box3().setFromObject(object), center=bounds.getCenter(new THREE.Vector3());
       object.rotation.y=-Math.PI/2;
       object.position.copy(center).negate().applyAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2);
-      object.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;
+      object.traverse(node=>{if(node.isMesh){node.castShadow=false;node.receiveShadow=true;
         const mats=Array.isArray(node.material)?node.material:[node.material];
         mats.forEach(mat=>{if(mat.map){mat.map.anisotropy=ANISO;mat.map.minFilter=THREE.LinearMipmapLinearFilter;mat.map.magFilter=THREE.LinearFilter;}
           if(mat.bumpMap){mat.bumpMap.anisotropy=ANISO;mat.bumpScale=.035;} mat.needsUpdate=true;});
@@ -134,7 +134,7 @@ const mag2=new THREE.Group(); mag2.position.set(0,.042,-.01); mag2.rotation.x=.1
 const fl=new THREE.Group(); fl.position.set(0,.014,-.71); fl.visible=false; gun.add(fl);
 const fm=new THREE.MeshBasicMaterial({color:0xffc070,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
 for(let i=0;i<2;i++){const p=new THREE.Mesh(new THREE.PlaneGeometry(.16,.16),fm);p.rotation.z=i*Math.PI/4;fl.add(p);}
-const fli=new THREE.PointLight(0xffa040,0,10); fl.add(fli);
+const fli=new THREE.PointLight(0xffa040,0,10); fli.position.copy(fl.position); gun.add(fli); // luz fora do grupo do clarão: fica sempre na cena (intensidade 0) → nº de luzes constante, sem recompilar programas a cada tiro
 const W={ads:0,sp:0,aim:false,trig:false,cd:0,mag:30,res:120,rl:false,t:0,pt:0,empty:false,filled:false,rk:0,rz:0,fl:0,ly:0,lp:0};
 // Camada procedural de animações cinematográficas da arma (sem substituir o rig existente).
 const WA={inspectT:-1,switchT:-1,switchFrom:false,switchTo:true,grenadeKick:0,grenadeRecover:0};

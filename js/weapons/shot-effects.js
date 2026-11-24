@@ -5,8 +5,8 @@ flash.castShadow=true; flash.shadow.mapSize.set(1024,1024); flash.shadow.camera.
 
 const hemi=scene.children.find(o=>o.isHemisphereLight);
 let EXPO=1,AMB=1;
-function expo(dt){let L=0;for(const q of RL){if(q.off&&q.fz<=0)continue;const d=Math.hypot(q.l.position.x-camera.position.x,q.l.position.z-camera.position.z);L=Math.max(L,Math.max(0,1-d/12));}
-  L=Math.min(1,L+(flashOn?.35:0));const T=1.5-.7*L;EXPO+=(T-EXPO)*(1-Math.exp(-dt*(T<EXPO?2.5:.8)));}
+function expo(dt){let L=0;for(const q of LREG.nearLamps()){if(q.off&&q.fz<=0)continue;const d=Math.hypot(q.l.position.x-camera.position.x,q.l.position.z-camera.position.z);L=Math.max(L,Math.max(0,1-d/12));}
+  L=Math.min(1,L+(flashOn?.35:0));const T=(1.5-.7*L)*(typeof VIS!=='undefined'?VIS.exp:1);EXPO+=(T-EXPO)*(1-Math.exp(-dt*(T<EXPO?2.5:.8)));}
 // audio
 let MB,RV,BR;
 function ac(){if(AC)return AC;try{AC=new (window.AudioContext||window.webkitAudioContext)();

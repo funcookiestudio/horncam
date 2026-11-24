@@ -7,26 +7,27 @@ const MSAA=(()=>{const q=new URLSearchParams(location.search).get('msaa'),mx=ren
 const rtOpt={minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter};
 const rt=(MSAA>0&&THREE.WebGLMultisampleRenderTarget)?Object.assign(new THREE.WebGLMultisampleRenderTarget(2,2,rtOpt),{samples:MSAA}):new THREE.WebGLRenderTarget(2,2,rtOpt);
 const post=new THREE.ShaderMaterial({
-  uniforms:{t:{value:rt.texture},time:{value:0},res:{value:new THREE.Vector2(1,1)},shake:{value:0},sig:{value:0},fk:{value:1},glare:{value:0},lpos:{value:new THREE.Vector2(.5,.5)}},
+  uniforms:{t:{value:rt.texture},time:{value:0},res:{value:new THREE.Vector2(1,1)},shake:{value:0},sig:{value:0},fk:{value:1},glare:{value:0},lpos:{value:new THREE.Vector2(.5,.5)},dk:{value:.6},dbg:{value:0}},
   vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=vec4(position,1.);}',
   fragmentShader:`
-  varying vec2 v; uniform sampler2D t; uniform float time,shake,sig,glare,fk; uniform vec2 res,lpos;
+  varying vec2 v; uniform sampler2D t; uniform float time,shake,sig,glare,fk,dk,dbg; uniform vec2 res,lpos;
   float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
   void main(){
     vec2 c=v-.5; float r2=dot(c,c);
-    vec2 d=c*(1.+1.1*r2*fk)*(1.-.14*fk);               // olho de peixe
+    vec2 d=dbg==1.?c:c*(1.+1.1*r2*fk)*(1.-.14*fk);               // olho de peixe
     d.x+=(h(vec2(floor(time*24.),1.))-.5)*.0015*shake;
     vec2 u=d+.5;
     float band=h(vec2(floor(v.y*18.),floor(time*14.)));
     u.x+=(band-.5)*.12*sig*step(.55,band)+(h(vec2(floor(v.y*200.),floor(time*30.)))-.5)*.02*sig;
-    float ca=(.006+.02*r2)*(1.+sig*8.);                    // aberração cromática
+    float ca=dbg==1.?0.:(.006+.02*r2)*(1.+sig*8.);                    // aberração cromática
     vec3 col=vec3(texture2D(t,u+c*ca).r,texture2D(t,u).g,texture2D(t,u-c*ca).b);
     if(u.x<0.||u.x>1.||u.y<0.||u.y>1.) col=vec3(0.);
     float l=dot(col,vec3(.299,.587,.114));
-    col=mix(vec3(l),col,.7);                 // dessatura
+    col=mix(vec3(l),col,.55);                // dessatura (tom doentio)
     col=(col-.5)*1.18+.5+.02;                // contraste
-    col*=vec3(1.0,1.03,1.0);                 // leve tom esverdeado
-    if(glare>.001){                          // luz forte direto na lente
+    col*=vec3(1.0,1.03,1.0);
+    col*=mix(vec3(.84,1.02,.9),vec3(1.1,1.0,.8),smoothstep(.12,.65,dot(col,vec3(.299,.587,.114)))); // sombras verde-azuladas, luzes âmbar sujo
+    if(glare>.001&&dbg!=4.){                          // luz forte direto na lente
       vec2 dl=v-lpos; dl.x*=res.x/res.y; float dd=length(dl);
       float core=exp(-dd*dd*900.), halo=exp(-dd*6.5), mid=exp(-dd*22.);
       float streak=exp(-abs(dl.y)*70.)*exp(-abs(dl.x)*2.2);       // risco horizontal (anamórfico)
@@ -37,10 +38,10 @@ const post=new THREE.ShaderMaterial({
       col.r+=halo*glare*.05; col.b+=mid*glare*.08;
     }
     float g=h(v*res+fract(time)*100.)-.5;    // ruído
-    col+=g*.12;
-    col*=.93+.07*sin(v.y*res.y*1.6+time*8.);   // scanlines
+    if(dbg!=2.)col+=g*.12;
+    if(dbg!=2.)col*=.93+.07*sin(v.y*res.y*1.6+time*8.);   // scanlines
     col*=.96+.04*sin(time*60.);              // flicker do sensor
-    col*=1.-smoothstep(.25,.95,length(c)*1.25); // vinheta
+    if(dbg!=3.)col*=1.-clamp(smoothstep(.12,.92,length(c)*1.25)*(.9+.3*dk),0.,1.); // vinheta forte
     float sn=h(v*res*1.7+fract(time*9.)*61.);
     col=mix(col,vec3(l*.6),sig*.5);
     col+=vec3(.2,.0,.25)*sig*step(.985,h(vec2(floor(v.y*60.),floor(time*20.))));

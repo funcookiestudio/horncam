@@ -167,7 +167,7 @@ const dust=new THREE.Points(dgm,new THREE.ShaderMaterial({uniforms:{cp:{value:ne
 dust.frustumCulled=false;scene.add(dust);
 // O facho (spot + cone + poeira) segue a direção real da lanterna/cano: ao recuar a arma perto de paredes, a luz gira junto com ela
 const FA_D=new THREE.Vector3();
-const bmg=new THREE.ConeGeometry(6.9,12,28,1,true);bmg.translate(0,-6,0);bmg.rotateX(Math.PI/2);
+const bmg=new THREE.ConeGeometry(4.25,12,28,1,true);bmg.translate(0,-6,0);bmg.rotateX(Math.PI/2);
 const beam=new THREE.Mesh(bmg,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
   vertexShader:'varying vec3 vn,vv;varying float vy;void main(){vy=clamp(-position.z/12.,0.,1.);vec4 mv=modelViewMatrix*vec4(position,1.);vn=normalMatrix*normal;vv=-mv.xyz;gl_Position=projectionMatrix*mv;}',
   fragmentShader:'varying vec3 vn,vv;varying float vy;void main(){float f=abs(dot(normalize(vn),normalize(vv)));gl_FragColor=vec4(1.,.95,.8,pow(f,2.5)*(1.-vy)*.2);}'}));

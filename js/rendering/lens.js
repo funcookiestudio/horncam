@@ -33,7 +33,7 @@ function menuLens(dt,w,h){
   glareP.x=mlv.x*.5+.5;glareP.y=mlv.y*.5+.5;
   post.uniforms.glare.value=glareS;post.uniforms.lpos.value.set(glareP.x,glareP.y);
   const bloom=Math.min(1,.25+glareS*.9);
-  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,.09+bloom*.75);
+  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,.07+bloom*.4);
   const k=Math.max(w,h)/512;lx.drawImage(dirt,w/2-256*k,h/2-256*k,512*k,512*k);lx.globalAlpha=1;
   flare({x:glareP.x*w,y:(1-glareP.y)*h,I:.6+glareS*.5},w,h,Math.min(w,h));
 }
@@ -48,15 +48,16 @@ function lensTick(dt){
   if(!active||!lensEffectsEnabled){glareS=0;post.uniforms.glare.value=0;post.uniforms.lpos.value.set(.5,.5);return;}
   lfr++;const cand=[];
   // Primeiro: projeção e triagem barata. Não fazer raycast para centenas de lâmpadas.
-  for(let i=0;i<RL.length;i++){
-    const L=RL[i];
+  const LL=LREG.nearLamps();
+  for(let i=0;i<LL.length;i++){
+    const L=LL[i];
     lvv.set(L.pos.x,L.pos.y,L.pos.z).project(camera);
     if(lvv.z>1||Math.abs(lvv.x)>1.35||Math.abs(lvv.y)>1.35){L.fi=0;continue;}
     const dx=L.pos.x-camera.position.x,dy=L.pos.y-camera.position.y,dz=L.pos.z-camera.position.z;
     const d=Math.sqrt(dx*dx+dy*dy+dz*dz);
     if(d>26){L.fi=0;continue;}
     const f=Math.max(0,(L.p.material.color.r-.35)/.65),nd=Math.hypot(lvv.x,lvv.y);
-    const I=Math.max(0,1-d/26)*f*(.4+.6*(1-Math.min(1,nd/1.5)));
+    const I=Math.max(0,1-d/26)*f*(.4+.6*(1-Math.min(1,nd/1.5)))*(L.real?1:.35); // painéis (antes só visuais) pesam menos: com 69 luzes na tela a lente enchia de círculos
     L.fi=(L.fi||0)+(I-(L.fi||0))*.5;
     if(L.fi>.012)cand.push({L,x:(lvv.x*.5+.5)*w,y:(-lvv.y*.5+.5)*h,I:L.fi,d,idx:i});
   }
@@ -102,13 +103,13 @@ function lensTick(dt){
   glareS+=(tg-glareS)*(1-Math.exp(-dt*(tg>glareS?14:1.8)));
   if(tg>.02){glareP.x=bx2;glareP.y=by2;}
   post.uniforms.glare.value=glareS;post.uniforms.lpos.value.set(glareP.x,glareP.y);
-  let bloom=0;for(const c of visible.slice(0,3))bloom+=c.I;bloom=Math.min(1,bloom*1.4);
+  let bloom=0;for(const c of visible.slice(0,2))bloom+=c.I;bloom=Math.min(1,bloom*.9);
   if(W.fl>0){fl.getWorldPosition(lvv).project(camera);visible.unshift({x:(lvv.x*.5+.5)*w,y:(-lvv.y*.5+.5)*h,I:.9,muz:true});bloom=Math.min(1,bloom+.6);}
   if(flashOn)bloom=Math.min(1,bloom+.12);
   // A sujeira é uma textura pré-gerada; flares só são desenhados para as quatro fontes mais fortes.
-  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,.09+bloom*.75);
+  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,.07+bloom*.4);
   const sc=Math.max(w,h)/512;lx.drawImage(dirt,w/2-256*sc,h/2-256*sc,512*sc,512*sc);lx.globalAlpha=1;
-  const m=Math.min(w,h);for(const c of visible.slice(0,4)){if(c.I>.02)flare(c,w,h,m);}
+  const m=Math.min(w,h);for(const c of visible.slice(0,2)){if(c.I>.04)flare(c,w,h,m);}
 }
 updAmmo();
 

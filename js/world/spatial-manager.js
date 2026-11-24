@@ -33,7 +33,7 @@ const RBQ=new Set(),RB_BUDGET=5;
 function rebuildTick(){
   if(!RBQ.size)return;const t0=performance.now(),cp=camera.position;
   do{let best=null,bd=1e18;for(const c of RBQ){const dx=(c.min.x+c.max.x)*.5-cp.x,dz=(c.min.z+c.max.z)*.5-cp.z,d=dx*dx+dz*dz;if(d<bd){bd=d;best=c}}
-    RBQ.delete(best);rebuild(best)}while(RBQ.size&&performance.now()-t0<RB_BUDGET)}
+    RBQ.delete(best);rebuild(best);lvDirty(best)}while(RBQ.size&&performance.now()-t0<RB_BUDGET)}
 function rebuild(c){
   if(c.ib)hideVox(c);
   if(c.mesh){const i=hitMeshes.indexOf(c.mesh);if(i>=0)hitMeshes.splice(i,1);scene.remove(c.mesh);c.mesh.geometry.dispose();c.mesh=null}

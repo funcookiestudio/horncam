@@ -1,6 +1,6 @@
 // [HORNCAM] js/debug/profiler.js
 // ===== Diagnóstico de desempenho por etapa (F4) e testes A/B =====
-let perfDiagOn=false,perfBypassPost=false,perfPointLights=true,perfShadows=true,perfVoxelsVisible=true,perfSamples=0,perfReportTimer=0;
+let perfDiagOn=false,perfBypassPost=false,perfVolLight=true,perfShadows=true,perfVoxelsVisible=true,perfSamples=0,perfReportTimer=0;
 const perfTimes={logic:0,network:0,effects:0,lighting:0,scene:0,post:0,total:0};
 const perfPanel=document.createElement('pre');
 perfPanel.id='horncam-perf-panel';
@@ -9,10 +9,12 @@ document.body.appendChild(perfPanel);
 if(/[?&]perf=1/.test(location.search)){perfDiagOn=true;perfPanel.style.display='block';perfPanel.style.fontSize='10px';perfPanel.style.pointerEvents='none'} // ?perf=1: painel só de diagnóstico, visível no celular (não altera gráficos)
 addEventListener('keydown',e=>{
  if(e.code==='F4'){perfDiagOn=!perfDiagOn;perfPanel.style.display=perfDiagOn?'block':'none';e.preventDefault();}
- if(e.code==='F5'){perfPointLights=!perfPointLights;for(const q of LPOOL)q.l.visible=perfPointLights;e.preventDefault();}
+ if(e.code==='F5'){perfVolLight=!perfVolLight;LVU.on.value=perfVolLight&&LV.ready?1:0;e.preventDefault();}
  if(e.code==='F6'){perfShadows=!perfShadows;renderer.shadowMap.enabled=perfShadows;if(!perfShadows){renderer.shadowMap.autoUpdate=false;}else{renderer.shadowMap.autoUpdate=true;renderer.shadowMap.needsUpdate=true;}e.preventDefault();}
  if(e.code==='F7'){perfBypassPost=!perfBypassPost;e.preventDefault();}
  if(e.code==='F8'){perfVoxelsVisible=!perfVoxelsVisible;for(const c of vchunks)if(c.mesh)c.mesh.visible=perfVoxelsVisible;for(const b of VBATCH)b.visible=perfVoxelsVisible;e.preventDefault();}
+ if(e.code==='Backslash'){const v=(post.uniforms.dbg.value+1)%5;post.uniforms.dbg.value=v;document.title='HORNCAM · pós: '+['completo','sem distorção/aberração','sem scanlines/ruído','sem vinheta','sem brilho de lente'][v];console.log('[post] diag',['completo','sem distorção/aberração','sem scanlines/ruído','sem vinheta','sem brilho de lente'][v]);e.preventDefault();}
+ if(e.code==='F10'){gun.visible=!gun.visible;e.preventDefault();} // diagnóstico: esconde a arma
  if(e.code==='F9'){lensEffectsEnabled=!lensEffectsEnabled;if(!lensEffectsEnabled){const cv=document.getElementById('lens');if(cv){const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);}glareS=0;post.uniforms.glare.value=0;}e.preventDefault();}
 });
 function perfReport(dt){
@@ -21,11 +23,11 @@ function perfReport(dt){
  let lightCount=0,meshCount=0;scene.traverse(o=>{if(o.isLight)lightCount++;if(o.isMesh||o.isInstancedMesh)meshCount++;});
  const f=x=>x.toFixed(2)+' ms';
  perfPanel.textContent='HORNCAM / PERFIL DE DESEMPENHO (médias)\n'+
- 'F5 luzes pontuais: '+(perfPointLights?'LIGADAS':'DESLIGADAS')+' | F6 sombras: '+(perfShadows?'LIGADAS':'DESLIGADAS')+' | F7 pós-processo: '+(perfBypassPost?'IGNORADO':'ATIVO')+' | F8 voxels: '+(perfVoxelsVisible?'VISÍVEIS':'OCULTOS')+' | F9 efeitos lente: '+(lensEffectsEnabled?'ATIVOS':'DESLIGADOS')+'\n'+
+ 'F5 luz das luminárias (volume): '+(perfVolLight?'LIGADA':'DESLIGADA')+' | F6 sombras: '+(perfShadows?'LIGADAS':'DESLIGADAS')+' | F7 pós-processo: '+(perfBypassPost?'IGNORADO':'ATIVO')+' | F8 voxels: '+(perfVoxelsVisible?'VISÍVEIS':'OCULTOS')+' | F9 efeitos lente: '+(lensEffectsEnabled?'ATIVOS':'DESLIGADOS')+'\n'+
  'CPU por quadro (amostra): '+f(perfTimes.total)+' | estimativa CPU: '+(perfTimes.total>0?(1000/perfTimes.total).toFixed(1):'--')+'\n'+
  'Lógica: '+f(perfTimes.logic)+' | rede: '+f(perfTimes.network)+' | efeitos: '+f(perfTimes.effects)+'\n'+
  'Iluminação: '+f(perfTimes.lighting)+' | render cena: '+f(perfTimes.scene)+' | pós: '+f(perfTimes.post)+'\n'+
- 'Luzes na cena: '+lightCount+' | meshes: '+meshCount+' | lâmpadas: '+lamps.length+' | luzes pool: '+LPOOL.length+'\n'+
+ 'Luzes na cena: '+lightCount+' | meshes: '+meshCount+' | lâmpadas: '+lamps.length+' | volume de luz: galpão '+(LV.ready?LV.wi+1:'-')+' · recálculos '+LV.stats.fulls+' · deltas '+LV.stats.deltas+' · último '+LV.stats.buildMs.toFixed(0)+' ms\n'+
  'Draw calls: '+r.calls+' | triângulos: '+r.triangles+' | geometrias: '+mem.geometries+' | texturas: '+mem.textures+'\n'+
  'Nota: amostras recentes; render mede submissão CPU, não GPU. Compare no mesmo ponto/câmera.';
 }
@@ -52,7 +54,7 @@ function tick(){
   const dt=Math.min(clock.getDelta(),.05); time+=dt;
   let t0=performance.now();if(active) update(dt);perfTimes.logic=performance.now()-t0;
   t0=performance.now();netTick(dt);perfTimes.network=performance.now()-t0;
-  t0=performance.now();fxVox(dt);rebuildTick();fxRender();ammoBoxTick(dt);ecgTick(dt);perfTimes.effects=performance.now()-t0;
+  t0=performance.now();fxVox(dt);rebuildTick();visFrame();progWatch();if(active)lvTick(dt);fxRender();ammoBoxTick(dt);ecgTick(dt);perfTimes.effects=performance.now()-t0;
   t0=performance.now();expo(dt);{let on=0;for(const L of RL)if(!(L.off&&L.fz<=0))on++;AMB+=(on/RL.length-AMB)*(1-Math.exp(-dt*3));}
   hemi.intensity=(.04+.31*AMB)*EXPO; rim.intensity=(.15+.35*AMB)*EXPO;
   lampTick(dt);perfTimes.lighting=performance.now()-t0;

@@ -1,6 +1,6 @@
 // [HORNCAM] js/world/breaker-panels.js
 // ===== QUADRO DE DISJUNTORES: 8 chaves por galpão (7 corredores + escritório) =====
-const NCOR=8,SW=WH.map(()=>{const lit=Math.random()<.3;return Array.from({length:NCOR},()=>lit&&Math.random()<.88)}), // ~70% dos galpões começam apagados
+const NCOR=8,SW=WH.map(()=>{const lit=Math.random()<.55,a=Array.from({length:NCOR},()=>lit&&Math.random()<.3);if(lit&&!a.some(Boolean))a[Math.random()*NCOR|0]=true;return a}), // terror: ~45% dos galpões no escuro; nos demais, só ~30% dos corredores acesos (mín. 1)
   LW=WH.map(()=>Array.from({length:NCOR},()=>[])),BRKW={};
 lamps.forEach(L=>{if(L.wi!==undefined)LW[L.wi][L.cor].push(L)});
 function applyPower(wi,ci,init){const on=SW[wi][ci];
@@ -41,16 +41,9 @@ function breakerTarget(){if(PH.dead||!BRK.length)return null;const cp=camera.pos
 // lâmpada piscando solta faísca (só perto do jogador, e nem todo apagão)
 function lampSpark(L){const dx=L.pos.x-camera.position.x,dz=L.pos.z-camera.position.z;if(dx*dx+dz*dz>26*26||Math.random()<.45)return;
   sparkShower(L.pos,4+(Math.random()*6|0));SV=attn(L.pos.x,L.pos.z);try{nz(.1,.45,6000,1,2,.18,'highpass');}catch(e){}SV=1}
-let lampAsgT=0;const LAMP_DUMMY={l:{position:{x:1e5,y:0,z:1e5}},occT:1};
-function assignLamps(){const cx=camera.position.x,cz=camera.position.z,c=[];
-  for(const L of RL){if(L.off)continue;const dx=L.pos.x-cx,dz=L.pos.z-cz;c.push([dx*dx+dz*dz,L])}
-  c.sort((a,b)=>a[0]-b[0]);const keep=new Set(c.slice(0,LPOOL.length).map(q=>q[1])),free=[];
-  for(const s of LPOOL){if(s.lamp&&keep.has(s.lamp))keep.delete(s.lamp);else{s.lamp=null;free.push(s)}}
-  for(const L of keep){const s=free.pop();if(!s)break;s.lamp=L;s.l.position.set(L.pos.x,L.pos.y-L.ly,L.pos.z);s.l.distance=L.range}}
 function lampTick(dt){
   // As lâmpadas comuns são estáticas: 100% acesas ou 100% apagadas.
   // Somente a lâmpada defeituosa executa animação de intensidade.
-  lampAsgT-=dt;if(lampAsgT<=0){lampAsgT=.25;assignLamps()}
   let dirty=false;
   for(const L of lamps){let f=L.off?0:1,su=1;
     if(!L.off&&L.ont!==undefined&&L.ont<.4){L.ont+=dt;su=L.ont<0?0:(Math.sin(L.ont*70+L.ph*9)>-.2?1:.12)}
@@ -73,7 +66,6 @@ function lampTick(dt){
   }
   if(dirty)lampIM.instanceColor.needsUpdate=true;
   // Sem oclusão dinâmica, sem multiplicador de exposição e sem oscilações nas luzes normais.
-  for(const s of LPOOL){const L=s.lamp;s.l.intensity=!L||L.off?0:L.base*(L.bad?L.f:1)*(L.su===undefined?1:L.su)}
 }
 
 // lanterna presa ao corpo

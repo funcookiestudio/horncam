@@ -180,7 +180,7 @@ function voxCollide(){
   P.pos.x=Math.max(-290,Math.min(510,P.pos.x));P.pos.z=Math.max(-270,Math.min(270,P.pos.z))}
 function collide(){collide0();voxCollide();NET.push()}
 // Luminárias industriais: somente acesas, apagadas ou uma única lâmpada com falha orgânica no corredor do Galpão 01
-const lamps=[],RL=[],LPOOL=[];
+const lamps=[],RL=[];
 const panelMat=new THREE.MeshBasicMaterial({color:0xdfeaff});
 const lampIM=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({color:0xdfeaff}),LAMPDEF.length),LAMP_TMP=new THREE.Color();
 {const o=new THREE.Object3D();
@@ -188,4 +188,5 @@ const lampIM=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.Mesh
     const pos=new V3(d.x,d.y,d.z),small=d.real&&d.range<24,L={id:i,pos,l:{position:pos,intensity:0},p:{position:pos,material:{color:{r:1}}},real:!!d.real,range:d.range||24,ly:small?.34:.32,bad:d.mode==='bad',base:small?.9:1.2,ph:d.x*.37+d.z*.11,off:d.mode==='dead',dead:d.mode==='dead',wi:d.wi,cor:d.cor,ont:9,su:1,fz:0,occ:1,occT:1,col:-1,f:1,glitchT:0,glitchHold:0,glitchLevel:1,glitchPhase:0};
     lamps.push(L);if(L.real)RL.push(L)});
   lampIM.frustumCulled=false;lampIM.userData.lampIM=true;lampIM.userData.lampBase=0;scene.add(lampIM);hitMeshes.push(lampIM);
-  for(let i=0;i<13;i++){const l=new THREE.PointLight(0xcfe0ff,0,24,1.6);l.position.set(0,-50,0);scene.add(l);LPOOL.push({l,lamp:null})}}
+  // (fase 4) sem pool de PointLights: a luz das luminárias vem do volume de luz do galpão ativo (rendering/light-volume.js)
+}

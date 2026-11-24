@@ -16,7 +16,7 @@ const SPAWN_LIST=[];[[0,21],[0,-21],[-19,5],[15,5],[-6,20],[5,-19.5]].forEach(p=
     // As duas luminárias vizinhas desse corredor ficam apagadas.
     // 1% pisca e solta faísca, 2% queimadas, 97% boas (sorteio fixo por lâmpada)
     const rr=lampRoll(activeWarehouse,x,z,y);
-    mode=rr<.01?'bad':rr<.03?'dead':'on';
+    mode=rr<.03?'bad':rr<.11?'dead':'on'; // terror: 3% piscando, 8% queimadas
     // corredor = linha de luminárias em x (0..6); 7 = escritório (luminárias baixas)
     const cor=y<4?7:Math.max(0,Math.min(6,Math.round((x+15)/5)));
     LAMPDEF.push({x:TX(x),y,z:TZ(z),sx,sy,sz,mode,real,range,wi:activeWarehouse,cor})

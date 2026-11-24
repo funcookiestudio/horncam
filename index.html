@@ -69,6 +69,10 @@
     <h2>OPÇÕES</h2>
     <div class="row"><span>SOM</span><button id="optdn" class="vb" type="button" aria-label="Diminuir volume">−</button><input id="optvol" type="range" min="0" max="100" step="1"><button id="optup" class="vb" type="button" aria-label="Aumentar volume">+</button><span id="optv"></span></div>
     <div class="row"><span>MUDO</span><button id="optmute" type="button">DESLIGADO</button></div>
+    <div class="row"><span>ESCURIDÃO</span><input id="optdark" type="range" min="0" max="100" step="5"><span id="optdarkv"></span></div>
+    <div class="row"><span>REFLEXOS</span><button id="optrefl" type="button">LIGADO</button><input id="optreflI" type="range" min="0" max="100" step="5"><span id="optreflv"></span></div>
+    <div class="row"><span>SUJEIRA</span><button id="optdirt" type="button">LIGADO</button></div>
+    <p class="hint">Se o jogo ficar pesado, desligue REFLEXOS e SUJEIRA.</p>
     <div class="row"><span>AJUDA</span><button id="helpbtn" type="button">COMO JOGAR</button></div>
     <button id="optclose" type="button">FECHAR</button>
   </div>
@@ -102,6 +106,7 @@
 <script src="js/core/renderer.js"></script>
 <script src="js/core/scene.js"></script>
 <script src="js/ui/menu-scene.js"></script>
+<script src="js/rendering/lv-shader.js"></script>
 <script src="js/world/instancing.js"></script>
 <script src="js/world/voxel-system.js"></script>
 <script src="js/world/map-warehouse.js"></script>
@@ -112,9 +117,12 @@
 <script src="js/world/glass.js"></script>
 <script src="js/world/twisted-metal.js"></script>
 <script src="js/world/breaker-panels.js"></script>
+<script src="js/world/lamp-registry.js"></script>
+<script src="js/rendering/light-volume.js"></script>
 <script src="js/rendering/bodycam-postfx.js"></script>
 <script src="js/player/player.js"></script>
 <script src="js/audio/sound-options.js"></script>
+<script src="js/ui/visual-options.js"></script>
 <script src="js/ui/start-flow.js"></script>
 <script src="js/ui/intro-transition.js"></script>
 <script src="js/ui/touch-input.js"></script>
