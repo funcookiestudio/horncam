@@ -39,6 +39,7 @@ const SPAWN_LIST=[];[[0,21],[0,-21],[-19,5],[15,5],[-6,20],[5,-19.5]].forEach(p=
       for(const im of parts.ims){im.castShadow=k!='g'&&k!='l'&&k!='f'&&k!='w';im.receiveShadow=true;scene.add(im);
         if(k!='l'&&k!='f'&&k!='w')decorHit.push(im);
         if(k==='m'||k==='s'||k==='g')im.userData.decK=k}
+      if(k!='l'&&k!='f'&&k!='w')wcRegister(T[k][0],L,parts.part);
       if(k==='m'||k==='s'||k==='g'){DECK[k]={part:parts.part,L};L.forEach((b,i)=>{const key=Math.floor(b[0]/4)+','+Math.floor(b[2]/4);let a=DGRID.get(key);if(!a)DGRID.set(key,a=[]);a.push([k,i]);
         // faixa de tinta no piso (comprida e fina): registra em TODAS as células que ela cobre, senão a explosão só a acharia pelo centro
         if(k==='s'&&b[4]<=.03&&b[1]<.2){const q=Math.round(b[7]/(Math.PI/2)),od=Math.abs(q)%2===1,ex=(od?b[5]:b[3])/2,ez=(od?b[3]:b[5])/2,

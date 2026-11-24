@@ -33,6 +33,9 @@ function mkChunk(mn,mx,type,mk,vs_){const V_=vs_||VS;
   const g=new THREE.BoxGeometry(sz.x,sz.y,sz.z);g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(72).fill(1),3));
   const m=new THREE.Mesh(g,VM[mk]);m.position.copy(mn).addScaledVector(sz,.5);m.castShadow=m.receiveShadow=true;m.userData.chunk=c;
   freezeObj(m);scene.add(m);hitMeshes.push(m);c.mesh=m;vchunks.push(c);return c}
+// Dados de voxel de um chunk, criados só no primeiro dano. Caixas/cargas (c.hollow) são ocas: casca de 1 voxel, miolo vazio (~80% menos voxels)
+function voxAlloc(c){const nx=c.n[0],ny=c.n[1],nz=c.n[2];c.a=new Uint8Array(nx*ny*nz).fill(1);c.fr=new Uint8Array(c.a.length);
+  if(c.hollow&&nx>2&&ny>2&&nz>2)for(let y=1;y<ny-1;y++)for(let z=1;z<nz-1;z++){const o=y*nx*nz+z*nx;for(let x=1;x<nx-1;x++)c.a[o+x]=0}}
 // ===== Chunks intactos em lotes instanciados (1 draw call por material e por célula de 64 m, com frustum culling) =====
 // Antes: ~4.300 malhas (uma por chunk) = ~2.000 draw calls por quadro dentro de um galpão. Chunk danificado volta a ter malha própria (rebuild).
 const VZERO=new THREE.Matrix4().makeScale(0,0,0);

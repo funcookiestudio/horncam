@@ -133,7 +133,7 @@ function worldTick(dt){const k=1-Math.exp(-dt*4);
   abUse=-1;camera.getWorldDirection(vf);
   const d=nearDoor();let dd=1e9;
   if(d){const dx=d.cx-P.pos.x,dz=d.cz-P.pos.z,L=Math.hypot(dx,dz)||1;if((vf.x*dx+vf.z*dz)/L>.4)dd=L;}
-  const bt=ammoTarget(),bk=breakerTarget();brkUse=null;
+  const bt=ammoTarget(),bk=breakerTarget();brkUse=null;brkNear=bk&&bk.dist<BH_NEAR&&(!bt||bk.dist<bt.dist)?bk:null;
   if(bk&&bk.dist<dd&&(!bt||bk.dist<bt.dist)){brkUse=bk;hint.textContent=(isTouch?'USE':'[G]')+' '+(SW[bk.b.wi][bk.i]?'DESLIGAR ':'LIGAR ')+(bk.i<7?'CORREDOR '+(bk.i+1):'ESCRITÓRIO');hint.style.display='block';useBtn.classList.add('show');return}
   if(bt&&bt.dist<dd){ammoHint(bt);return;}
   if(dd<1e9){hint.textContent=(isTouch?'USE':'[G]')+(d.open?' FECHAR ':' ABRIR ')+(d.gate?'PORTÃO':'PORTA DE EMERGÊNCIA');hint.style.display='block';useBtn.classList.add('show');return;}

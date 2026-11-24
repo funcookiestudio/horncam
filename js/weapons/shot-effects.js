@@ -1,7 +1,7 @@
 // [HORNCAM] js/weapons/shot-effects.js
 // ---------- Realismo: audio, luz, efeitos de tiro ----------
 hitMeshes.forEach(m=>{m.castShadow=true;m.receiveShadow=true;});
-flash.castShadow=true; flash.shadow.mapSize.set(1024,1024); flash.shadow.camera.near=.1; flash.shadow.camera.far=30; flash.shadow.bias=-.0005;
+flash.castShadow=true; flash.shadow.mapSize.set(1024,1024); flash.shadow.camera.near=.2; flash.shadow.camera.far=30; flash.shadow.bias=-.0005;
 
 const hemi=scene.children.find(o=>o.isHemisphereLight);
 let EXPO=1,AMB=1;

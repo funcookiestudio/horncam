@@ -149,7 +149,7 @@ function lobesApply(lobes,mn,mx,tun,n){
   for(const c of vchunks){
     if(PNT&&!c.paint)continue;
     if(c.max.x<mn.x||c.min.x>mx.x||c.max.y<mn.y||c.min.y>mx.y||c.max.z<mn.z||c.min.z>mx.z)continue;
-    if(!c.a){c.a=new Uint8Array(c.n[0]*c.n[1]*c.n[2]).fill(1);c.fr=new Uint8Array(c.a.length);genRebar(c)}
+    if(!c.a){voxAlloc(c);genRebar(c)}
     const hd=c.hard||1,vs=c.vs,bb=vs*.8,nx=c.n[0],ny=c.n[1],nz=c.n[2],a=c.a,fr=c.fr,
       x0=Math.max(0,Math.floor((mn.x-c.min.x)/vs)),x1=Math.min(nx-1,Math.floor((mx.x-c.min.x)/vs)),
       y0=Math.max(0,Math.floor((mn.y-c.min.y)/vs)),y1=Math.min(ny-1,Math.floor((mx.y-c.min.y)/vs)),

@@ -22,8 +22,13 @@ BRK.forEach((b,k)=>{b.k=k;BRKW[b.wi]=b;brkPlace(brkBody,k,b.x,1.5,b.z,.1,.5,.6);
 for(let wi=0;wi<WH.length;wi++)for(let ci=0;ci<NCOR;ci++){applyPower(wi,ci,true);brkVis(wi,ci)}
 function setBreaker(wi,ci,v,quiet){if(!SW[wi]||SW[wi][ci]===undefined||SW[wi][ci]===v)return;SW[wi][ci]=v;applyPower(wi,ci,false);brkVis(wi,ci);
   if(!quiet){try{tn(v?260:180,v?120:80,.14,.06,'square');nz(.06,.6,2500,1,3,.12);}catch(e){}}}
-function toggleBreaker(wi,ci){const v=!SW[wi][ci];setBreaker(wi,ci,v,false);NET.send({t:'sw',w:wi,c:ci,v:v?1:0})}
-let brkUse=null;
+function breakerDoToggle(wi,ci){const v=!SW[wi][ci];setBreaker(wi,ci,v,false);NET.send({t:'sw',w:wi,c:ci,v:v?1:0})}
+// com a mão do painel visível: o dedo faz um movimento leve para CIMA (liga) ou para BAIXO (desliga) e a chave troca no meio do gesto
+function toggleBreaker(wi,ci){
+  if(W.pend)return;
+  if(W.bz>.5){W.pend={wi,ci};W.pdir=SW[wi][ci]?-1:1;W.poke=1;return}
+  breakerDoToggle(wi,ci)}
+let brkUse=null,brkNear=null; // brkNear: painel de frente a menos de BH_NEAR m (usa a pose de mão estendida)
 // qual chave está sob a mira: interseção do raio da câmera com o plano frontal do quadro
 function breakerTarget(){if(PH.dead||!BRK.length)return null;const cp=camera.position;let best=null;
   for(const b of BRK){const dx=b.x-cp.x,dz=b.z-cp.z;if(dx*dx+dz*dz>3.4*3.4)continue;

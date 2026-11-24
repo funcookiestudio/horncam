@@ -22,6 +22,26 @@ function batchInstanced(geo,mat,L,info,fill){
     im.frustumCulled=true;freezeObj(im); // r128: InstancedMesh nasce com frustumCulled=false
     im.userData.ib={sph,unit};im.userData.decIdx=g.idx;im.raycast=instRaycast;ims.push(im)}
   return {ims,part}}
-function freezeObj(o){o.updateMatrix();o.matrixAutoUpdate=false} // estático: não recalcula matriz todo frame
+function freezeObj(o){o.updateMatrix();o.updateMatrixWorld(true);o.matrixAutoUpdate=false} // estático: não recalcula matriz todo frame
 const INST_ZERO=new THREE.Matrix4().makeScale(0,0,0);
-function instHide(p){p.im.setMatrixAt(p.j,INST_ZERO);p.im.instanceMatrix.needsUpdate=true}
+// Caixas da decoração para a colisão da arma (prateleiras, caixas, mesas, empilhadeiras...): grade de 2 m, teste raio x caixa orientada (barato)
+const WCB=new Map(),WC_CELL=2;let wcStamp=0;
+function wcRegister(geo,L,part){
+  if(!geo.boundingBox)geo.computeBoundingBox();const bb=geo.boundingBox;
+  L.forEach((b,i)=>{if(b[4]<.05)return; // faixas de tinta no piso: o piso já conta
+    const e={x:b[0],y:b[1],z:b[2],c:Math.cos(b[7]),s:Math.sin(b[7]),ix:1/b[3],iy:1/b[4],iz:1/b[5],bb,p:part[i],q:0},r=Math.hypot(b[3],b[5])*.5+.05;
+    for(let X=Math.floor((b[0]-r)/WC_CELL);X<=Math.floor((b[0]+r)/WC_CELL);X++)for(let Z=Math.floor((b[2]-r)/WC_CELL);Z<=Math.floor((b[2]+r)/WC_CELL);Z++){
+      const k=X+','+Z;let a=WCB.get(k);if(!a)WCB.set(k,a=[]);a.push(e)}})}
+function wcBoxes(o,d,len){ // menor distância (0..len) do raio até uma caixa da decoração; Infinity se nada
+  const X0=Math.floor(o.x/WC_CELL),Z0=Math.floor(o.z/WC_CELL);let best=Infinity;wcStamp++;
+  for(let X=X0-1;X<=X0+1;X++)for(let Z=Z0-1;Z<=Z0+1;Z++){const a=WCB.get(X+','+Z);if(!a)continue;
+    for(const e of a){if(e.q===wcStamp||e.p.hid)continue;e.q=wcStamp;
+      const rx=o.x-e.x,rz=o.z-e.z,ox=(e.c*rx-e.s*rz)*e.ix,oz=(e.s*rx+e.c*rz)*e.iz,oy=(o.y-e.y)*e.iy,
+        dx=(e.c*d.x-e.s*d.z)*e.ix,dz=(e.s*d.x+e.c*d.z)*e.iz,dy=d.y*e.iy,bb=e.bb;let t0=0,t1=Math.min(len,best);
+      for(let ax=0;ax<3;ax++){const oo=ax==0?ox:ax==1?oy:oz,dd=ax==0?dx:ax==1?dy:dz,mn=ax==0?bb.min.x:ax==1?bb.min.y:bb.min.z,mx=ax==0?bb.max.x:ax==1?bb.max.y:bb.max.z;
+        if(Math.abs(dd)<1e-9){if(oo<mn||oo>mx){t1=-1;break}continue}
+        let a1=(mn-oo)/dd,a2=(mx-oo)/dd;if(a1>a2){const t=a1;a1=a2;a2=t}
+        if(a1>t0)t0=a1;if(a2<t1)t1=a2;if(t0>t1){t1=-1;break}}
+      if(t1>=0&&t0<=t1&&t0<best)best=t0}}
+  return best}
+function instHide(p){p.hid=true;p.im.setMatrixAt(p.j,INST_ZERO);p.im.instanceMatrix.needsUpdate=true}

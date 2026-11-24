@@ -74,7 +74,7 @@ function warpMetal(P,R){
   list.sort((p,q)=>p[0]-q[0]);
   const sd=vh(P.x,P.y,P.z);
   for(const e of list.slice(0,10)){const c=e[1];
-    if(!c.a){c.a=new Uint8Array(c.n[0]*c.n[1]*c.n[2]).fill(1);c.fr=new Uint8Array(c.a.length)}
+    if(!c.a)voxAlloc(c);
     (c.warps=c.warps||[]).push({x:P.x,y:P.y,z:P.z,R:RI,ang:(sd<.5?-1:1)*(1.3+sd*1.6),amp:R*.3,sd:sd*40});if(c.warps.length>4)c.warps.shift();
     if(DEFER)DIRTY.add(c);else RBQ.add(c)}}
 function warpP(c,P){

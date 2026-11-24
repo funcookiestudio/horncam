@@ -110,24 +110,50 @@ var TRC=null,tri=0;
 function tracerInit(){const g=new THREE.BoxGeometry(.012,.012,1);g.translate(0,0,.5);const m0=new THREE.MeshBasicMaterial({color:0xffd9a0,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
   TRC=[];for(let i=0;i<10;i++){const m=new THREE.Mesh(g,m0);m.visible=false;m.frustumCulled=false;scene.add(m);TRC.push({m,t:0,from:new V3(),to:new V3(),len:0})}}
 
-function tracer(end){if(!TRC)tracerInit();const t=TRC[tri++%TRC.length];fl.getWorldPosition(t.from);t.to.copy(end);t.len=t.from.distanceTo(end);if(t.len<.6)return;
+function tracer(end,from){if(!TRC)tracerInit();const t=TRC[tri++%TRC.length];if(from)t.from.copy(from);else fl.getWorldPosition(t.from);t.to.copy(end);t.len=t.from.distanceTo(end);if(t.len<.6)return;
   t.t=0;t.m.position.copy(t.from);t.m.lookAt(t.to);t.m.scale.set(1,1,.001);t.m.visible=true}
 function tracerTick(dt){if(!TRC)return;for(const t of TRC){if(!t.m.visible)continue;t.t+=dt;const d=t.t*280,tail=Math.max(0,d-5),head=Math.min(t.len,d);
   if(tail>=t.len){t.m.visible=false;continue}t.m.position.copy(t.from).lerp(t.to,tail/t.len);t.m.scale.set(1,1,Math.max(.001,head-tail))}}
-function hit(){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02;
-  rc.setFromCamera({x:(Math.random()-.5)*spr,y:(Math.random()-.5)*spr},camera);
-  const h=spatialRaycast(rc,hitMeshes.concat(decorHit),false)[0];tracer(h?h.point:rc.ray.at(60,new V3()));if(!h)return;
+// Aplica o impacto de UM acerto (parede, voxel, decoração, vidro, jogador...)
+function dispatchHit(h,dir){
   const n=h.face.normal.clone();
   if(h.instanceId!=null){const m4=new THREE.Matrix4();h.object.getMatrixAt(h.instanceId,m4);n.transformDirection(m4);}
   n.transformDirection(h.object.matrixWorld);
-  if(h.object.userData.steel){steelImpact(h,n,rc.ray.direction.clone());return;}
-  if(hitChunk(h)){voxImpact(h,n,rc.ray.direction.clone());return;}
-  if(h.object.userData.glassG){glassImpact(h,n,rc.ray.direction.clone());return;}
-  if(h.object.userData.decK&&decImpact(h,n,rc.ray.direction.clone()))return;
+  if(h.object.userData.steel){steelImpact(h,n,dir.clone());return;}
+  if(hitChunk(h)){voxImpact(h,n,dir.clone());return;}
+  if(h.object.userData.glassG){glassImpact(h,n,dir.clone());return;}
+  if(h.object.userData.decK&&decImpact(h,n,dir.clone()))return;
   if(h.object.userData.rp){NET.hitPlayer(h.object.userData.rp,h.point,n);return;}
   if(h.object.userData.lampIM){hitLamp(h.instanceId);return;}
   const pp=[+h.point.x.toFixed(3),+h.point.y.toFixed(3),+h.point.z.toFixed(3)],pn=[+n.x.toFixed(3),+n.y.toFixed(3),+n.z.toFixed(3)];
   propFx(new V3(...pp),new V3(...pn));NET.send({t:'pi',p:pp,n:pn});}
+// Papelão (caixas/cargas): a bala ATRAVESSA. Retorna a caixa envolvente (mn/mx) se o acerto for numa caixa penetrável, senão null.
+function penBounds(h){const c=hitChunk(h);
+  if(c)return c.hollow?{mn:c.min,mx:c.max}:null;
+  if(h.object.userData.decK!=='m'||h.instanceId==null)return null;
+  const b=DECK.m&&DECK.m.L[h.object.userData.decIdx[h.instanceId]];if(!b||b.cv||Math.min(b[3],b[4],b[5])<.35)return null;
+  const q=Math.round(b[7]/(Math.PI/2));if(Math.abs(b[7]-q*Math.PI/2)>=.06)return null;
+  const odd=Math.abs(q)%2===1,hx=(odd?b[5]:b[3])/2,hy=b[4]/2,hz=(odd?b[3]:b[5])/2;
+  return{mn:new V3(b[0]-hx,b[1]-hy,b[2]-hz),mx:new V3(b[0]+hx,b[1]+hy,b[2]+hz)}}
+function exitPoint(p,d,bd){let t=1e9;
+  for(const ax of ['x','y','z']){const v=d[ax];if(Math.abs(v)<1e-6)continue;const tt=((v>0?bd.mx[ax]:bd.mn[ax])-p[ax])/v;if(tt>0&&tt<t)t=tt}
+  return p.clone().addScaledVector(d,Math.min(t,3))}
+function hit(){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02;
+  rc.setFromCamera({x:(Math.random()-.5)*spr,y:(Math.random()-.5)*spr},camera);
+  const dir=rc.ray.direction.clone();
+  let h=spatialRaycast(rc,hitMeshes.concat(decorHit),false)[0];tracer(h?h.point:rc.ray.at(60,new V3()));
+  for(let depth=0;h;depth++){
+    const bd=depth<3?penBounds(h):null;        // calculado ANTES do impacto (que converte a caixa em voxels)
+    dispatchHit(h,dir);
+    if(!bd)break;
+    const P2=exitPoint(h.point,dir,bd);
+    rc.set(P2.clone().addScaledVector(dir,.06),dir.clone().negate());rc.far=.25;  // buraco de saída: raio de fora para dentro na face oposta
+    const hx=spatialRaycast(rc,hitMeshes.concat(decorHit),false)[0];
+    if(hx)dispatchHit(hx,dir.clone().negate()); // a saída é furada "de fora para dentro" (a direção da bala aponta para fora do material)
+    rc.set(P2.clone().addScaledVector(dir,.03),dir);rc.far=60;                   // a bala segue em frente
+    h=spatialRaycast(rc,hitMeshes.concat(decorHit),false)[0];
+    tracer(h?h.point:P2.clone().addScaledVector(dir,60),P2);}
+  rc.far=60}
 function propFx(pt,n){
   for(let i=0;i<22;i++){const s=sparks[sk++%sparks.length];s.m.position.copy(pt);s.v.set((Math.random()-.5)*4,Math.random()*3.2,(Math.random()-.5)*4).addScaledVector(n,R2(2,5));s.life=R2(.3,.55);s.m.visible=true;}
   for(let i=0;i<4;i++)deb1(pt,n,'spark',R2(.006,.012),R2(3,7),R2(.4,.8));
@@ -139,11 +165,13 @@ const dust=new THREE.Points(dgm,new THREE.ShaderMaterial({uniforms:{cp:{value:ne
   fragmentShader:'varying float al;void main(){float r=length(gl_PointCoord-.5);gl_FragColor=vec4(.85,.95,1.,(1.-smoothstep(.1,.5,r))*al);}',
   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
 dust.frustumCulled=false;scene.add(dust);
+// O facho (spot + cone + poeira) segue a direção real da lanterna/cano: ao recuar a arma perto de paredes, a luz gira junto com ela
+const FA_D=new THREE.Vector3();
 const bmg=new THREE.ConeGeometry(6.9,12,28,1,true);bmg.translate(0,-6,0);bmg.rotateX(Math.PI/2);
 const beam=new THREE.Mesh(bmg,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
   vertexShader:'varying vec3 vn,vv;varying float vy;void main(){vy=clamp(-position.z/12.,0.,1.);vec4 mv=modelViewMatrix*vec4(position,1.);vn=normalMatrix*normal;vv=-mv.xyz;gl_Position=projectionMatrix*mv;}',
   fragmentShader:'varying vec3 vn,vv;varying float vy;void main(){float f=abs(dot(normalize(vn),normalize(vv)));gl_FragColor=vec4(1.,.95,.8,pow(f,2.5)*(1.-vy)*.2);}'}));
-beam.visible=false;beam.frustumCulled=false;camera.add(beam);
+beam.visible=false;beam.frustumCulled=false;gun.add(beam);beam.position.copy(FL_LENS); // cone de luz parte da lanterna da arma
 function fxTick(dt,sprint,sp){
   const k=r=>1-Math.exp(-dt*r);
   W.bk*=Math.exp(-dt*30);bolt.position.z+=((W.lock?1:W.bk)*.045+.01-bolt.position.z)*k(45);
@@ -156,5 +184,5 @@ function fxTick(dt,sprint,sp){
     s.v.y-=9.8*dt;s.m.position.addScaledVector(s.v,dt);s.m.rotation.x+=s.w.x*dt;s.m.rotation.z+=s.w.z*dt;
     if(s.m.position.y<.012){s.m.position.y=.012;if(Math.abs(s.v.y)>1.2)sfx('shell');s.v.y*=-.35;s.v.x*=.5;s.v.z*=.5;s.w.multiplyScalar(.5);}}
   for(const s of sparks){if(!s.m.visible)continue;s.life-=dt;if(s.life<=0){s.m.visible=false;continue;}s.v.y-=7*dt;s.m.position.addScaledVector(s.v,dt);s.m.scale.setScalar(Math.min(1,s.life/.35));}
-  const U=dust.material.uniforms;U.time.value=time;U.cp.value.copy(camera.position);camera.getWorldDirection(U.cf.value);U.fo.value=flashOn?1:0;U.uH.value=rt.height;beam.visible=flashOn;
+  const U=dust.material.uniforms;U.time.value=time;gun.updateMatrixWorld(true);flash.getWorldPosition(U.cp.value);U.cf.value.set(0,0,-1).transformDirection(gun.matrixWorld);U.fo.value=flashOn?1:0;U.uH.value=rt.height;beam.visible=flashOn;
 }

@@ -78,10 +78,13 @@ const iron=[bx(.012,.087,.012,0,.0615,-.5,blk),bx(.022,.014,.032,0,.025,-.5,blk)
 cy(.019,.16,0,.025,.17,gry); bx(.04,.07,.09,0,0,.22,blk);
 bx(.03,.085,.04,0,-.075,.075,blk,gun,-.35); bx(.04,.03,.07,0,-.045,-.04,blk);
 // Lanterna tática acoplada ao lado do handguard; acompanha o estado da tecla 1.
-const flashlightAttachment=new THREE.Group();flashlightAttachment.position.set(-.052,.012,-.39);flashlightAttachment.visible=false;gun.add(flashlightAttachment);
+const flashlightAttachment=new THREE.Group();flashlightAttachment.position.set(.052,.012,-.39);gun.add(flashlightAttachment); // lateral DIREITA do cano; sempre visível
 const flashlightBody=new THREE.Mesh(new THREE.CylinderGeometry(.012,.014,.105,12),MT(0x171a1b,.42,.72));flashlightBody.rotation.x=Math.PI/2;flashlightBody.position.z=-.005;flashlightAttachment.add(flashlightBody);
-const flashlightLens=new THREE.Mesh(new THREE.CircleGeometry(.010,16),new THREE.MeshBasicMaterial({color:0xc9d8d0,transparent:true,opacity:.9}));flashlightLens.position.z=-.059;flashlightAttachment.add(flashlightLens);
+const flashlightLens=new THREE.Mesh(new THREE.CircleGeometry(.010,16),new THREE.MeshBasicMaterial({color:0x3a4442,transparent:true,opacity:.9}));flashlightLens.position.z=-.059;flashlightAttachment.add(flashlightLens);
 const flashlightRing=new THREE.Mesh(new THREE.TorusGeometry(.012,.002,6,16),MT(0x55595a,.35,.8));flashlightRing.position.z=-.059;flashlightAttachment.add(flashlightRing);
+// A luz sai da lanterna da arma (acompanha recuo, mira e a pose de encosto); a luz parte um pouco à frente da lente
+const FL_LENS=new THREE.Vector3(.052,.012,-.47);
+gun.add(flash);gun.add(flash.target);flash.position.copy(FL_LENS);flash.target.position.set(FL_LENS.x,FL_LENS.y,-8);
 const ch=bx(.026,.012,.035,0,.073,.115,blk);
 const mag=new THREE.Group(); mag.position.set(0,-.05,-.07); mag.rotation.x=.12; gun.add(mag); mkMag(mag);
 const cuff=MT(0x14161a,.8,0),pad=MT(0x1b1d1a,.7,.1);
@@ -285,12 +288,13 @@ function weaponUpdate(dt,sprint,sp,amp){
   }
   const gt=W.rl?W.t:0,gr=W.rl?ss(.35,.55,gt)-ss(.65,.8,gt)+ss(.95,1.05,gt)-ss(1.6,1.8,gt):0,gs=1-.55*gr; fg.scale.set(gs,gs,1);
   if(!W.trig)W.tl=false;
-  if(W.trig&&!PH.dead&&!sprint&&W.wp<.5&&WA.inspectT<0&&WA.switchT<0){
+  if(W.trig&&W.bz>.5&&brkUse&&!W.tl&&!PH.dead){W.tl=true;useAct();} // na pose do painel, o clique (ou botão de atirar) também liga/desliga a chave sob a mira
+  if(W.trig&&!PH.dead&&!sprint&&W.wp<.5&&!(W.bz>.5)&&WA.inspectT<0&&WA.switchT<0){
     if(grenadeMode){if(!W.tl){W.tl=true;if(grenadeReady){if(throwBlast()){WA.grenadeKick=1;WA.grenadeRecover=0;grenadeMode=false;grenadeLoading=false;grenadeReady=false;grenadeProp.visible=false;grenadeLoadT=0;launcherHinge.rotation.x=0;lh.rotation.set(0,0,0);W.trig=false;W.tl=false;updAmmo();}}}}
     else if(!W.rl&&W.cd<=0&&(W.auto||!W.tl)){W.tl=true;if(W.mag>0)shoot();else if(W.res>0)reload();else{sfx('rel');W.cd=.25;}}
   }
   fl.visible=W.fl>0; fli.intensity=W.fl>0?4:0; fl.rotation.z=Math.random()*3;
-  W.ads+=((W.aim&&!W.rl&&!sprint&&W.wp<.5&&WA.inspectT<0&&WA.switchT<0?1:0)-W.ads)*k(12);
+  W.ads+=((W.aim&&!W.rl&&!sprint&&W.wp<.5&&!(W.bz>.5)&&WA.inspectT<0&&WA.switchT<0?1:0)-W.ads)*k(12);
   W.sp+=((sprint&&!W.rl?1:0)-W.sp)*k(8);
   W.ly+=(P.yaw-W.ly)*k(9); W.lp+=(P.pitch-W.lp)*k(9);
   W.rk*=Math.exp(-dt*14); W.rz*=Math.exp(-dt*12);

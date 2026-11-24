@@ -20,7 +20,8 @@ function decConv(k,i,quiet){
   const mkq=k==='s'&&b[4]<=.03&&b[1]<.2, // tinta/faixa no piso: age como o concreto do piso
     vs=mkq&&(2*hx/.0125)*(2*hz/.0125)*Math.max(1,Math.round(2*hy/.0125))<=150000?.0125:(8*hx*hy*hz<=2.3?.025:.05),
     c=mkChunk(new V3(b[0]-hx,b[1]-hy,b[2]-hz),new V3(b[0]+hx,b[1]+hy,b[2]+hz),'conc',decMat(mkq?'m':k,b[6]),vs);
-  c.free=true;c.hard=mkq?.35:DMAT[k].hard;c.paint=!!mkq;c.dcode=b[6]+2;
+  c.free=true;c.hard=mkq?.35:DMAT[k].hard;if(k==='m'&&!mkq&&Math.min(2*hx,2*hy,2*hz)>=.35)c.hollow=true; // caixa/carga: oca (casca de 1 voxel)
+  c.paint=!!mkq;c.dcode=b[6]+2;
   spatialInsert(spatialVoxels,c,c.min.x,c.max.x,c.min.z,c.max.z);return c}
 function decFind(k,q){
   const a=DGRID.get(Math.floor(q[0]/4)+','+Math.floor(q[2]/4));if(!a)return -1;
