@@ -30,7 +30,7 @@ function glassTick(dt){
       d.v.y-=9.8*dt;d.p.addScaledVector(d.v,dt);
       const wl=d.w.length();if(wl>1e-4){_gq.setFromAxisAngle(_gA.copy(d.w).divideScalar(wl),wl*dt);d.q.premultiply(_gq)}
       if(d.p.y<.1){d.p.y=.1;
-        if(d.v.y<-1.2){d.v.y*=-.3;d.v.x*=.55;d.v.z*=.55;d.w.multiplyScalar(.5);if(Math.random()<.5)gTink(.16)}
+        if(d.v.y<-1.2){d.v.y*=-.3;d.v.x*=.55;d.v.z*=.55;d.w.multiplyScalar(.5);if(Math.random()<.5)sndAt(d.p,()=>gTink(.16))}
         else{d.rest=1;d.q.setFromEuler(_ge.set(-Math.PI/2,d.yaw,0,'YXZ'));d.p.y=.102}}}
     else d.done=1;
     _gm.compose(d.p,d.q,d.s);gpIM.setMatrixAt(i,_gm);chg=true}
@@ -94,7 +94,7 @@ function gshTick(dt){
     if(!q.rest){q.v.y-=9.8*dt;m.position.addScaledVector(q.v,dt);
       const wl=q.w.length();if(wl>1e-4){_gq.setFromAxisAngle(_gA.copy(q.w).divideScalar(wl),wl*dt);m.quaternion.premultiply(_gq)}
       if(m.position.y<=Math.min(q.hh*.7,.25)+.02){m.position.y=.02;m.quaternion.setFromEuler(_ge.set(-Math.PI/2,q.yaw,0,'YXZ'));q.rest=true;q.t=0;
-        nz(.12,.18,4800,2,3,.2,'highpass');if(Math.random()<.6)gTink(.2)}}
+        sndAt(m.position,()=>{nz(.12,.18,4800,2,3,.2,'highpass');if(Math.random()<.6)gTink(.2)})}}
     else if(q.t>14){m.scale.multiplyScalar(1-dt*2);if(m.scale.x<.05){scene.remove(m);m.geometry.dispose();GSH.splice(i,1)}}}}
 function gSettle(G,dir,quiet){
   const nu=G.nu,nv=G.nv,a=G.a,seen=new Uint8Array(a.length),stk=[];gshN=0;

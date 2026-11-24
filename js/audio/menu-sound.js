@@ -84,7 +84,7 @@ function sfx(n,v=1){switch(n){
   case 'ins':nz(.04,.6,2400,2,1,.1,'bandpass');tn(900,300,.05,.12,'square');nz(.03,.5,3000,2,1,.1,'bandpass',.09);break;
   case 'bolt':nz(.06,.6,2000,2,1.5,.2,'bandpass');tn(300,120,.07,.2,'square');break;
   case 'bolt2':nz(.07,.7,1700,2,1.2,.25,'bandpass');tn(520,150,.06,.25,'square');break;
-  case 'shell':nz(.06,.25,6500,3,3,.1,'bandpass');tn(4300,3600,.07,.05);break;
+  case 'shell':{const f=3200+Math.random()*1800,v2=v*.4;nz(.018,.45*v2,1400,1,6,0);nz(.11,.3*v2,f,9,5,.08,'bandpass');nz(.08,.2*v2,f*1.58,9,6,.06,'bandpass',.004);nz(.05,.1*v2,f*2.3,7,7,.04,'bandpass',.008);break}   // cápsula de latão: toque seco + ressonância metálica curta (ruído filtrado, sem tom puro)
   case 'imp':nz(.07,.4,1400,1,3,.1);break;}}
 // ferrolho visivel
 const bolt=bx(.006,.02,.05,.0265,.04,.01,MT(0x6b6f73,.4,.6));
@@ -182,7 +182,7 @@ function fxTick(dt,sprint,sp){
   // respiração removida (BR fica mudo)
   for(const s of shells){if(!s.m.visible)continue;s.life-=dt;if(s.life<=0){s.m.visible=false;continue;}
     s.v.y-=9.8*dt;s.m.position.addScaledVector(s.v,dt);s.m.rotation.x+=s.w.x*dt;s.m.rotation.z+=s.w.z*dt;
-    if(s.m.position.y<.012){s.m.position.y=.012;if(Math.abs(s.v.y)>1.2)sfx('shell');s.v.y*=-.35;s.v.x*=.5;s.v.z*=.5;s.w.multiplyScalar(.5);}}
+    if(s.m.position.y<.012){s.m.position.y=.012;if(Math.abs(s.v.y)>1.2)sndAt(s.m.position,()=>sfx('shell'));s.v.y*=-.35;s.v.x*=.5;s.v.z*=.5;s.w.multiplyScalar(.5);}}
   for(const s of sparks){if(!s.m.visible)continue;s.life-=dt;if(s.life<=0){s.m.visible=false;continue;}s.v.y-=7*dt;s.m.position.addScaledVector(s.v,dt);s.m.scale.setScalar(Math.min(1,s.life/.35));}
   const U=dust.material.uniforms;U.time.value=time;gun.updateMatrixWorld(true);flash.getWorldPosition(U.cp.value);U.cf.value.set(0,0,-1).transformDirection(gun.matrixWorld);U.fo.value=flashOn?1:0;U.uH.value=rt.height;beam.visible=flashOn;
 }

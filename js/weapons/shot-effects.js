@@ -23,7 +23,17 @@ function ac(){if(AC)return AC;try{AC=new (window.AudioContext||window.webkitAudi
   const hz=AC.createGain();hz.gain.value=.006;ns.connect(hz);hz.connect(MB);ns.start();
   }catch(e){}return AC;}
 ov.addEventListener('click',()=>{const A=ac();if(A&&A.state==='suspended')A.resume();if(A&&MB&&!window.__aw){window.__aw=1;const g=MB.gain.value;MB.gain.value=0;try{sfx('shot');sfx('imp');}catch(e){}setTimeout(()=>{MB.gain.value=g;},450);}});
+// som espacial: SPOS={x,z,k?} marca de onde o som sai. Volume cai com a distância até a câmera (k = rapidez da queda) e o som vai para o lado certo (estéreo).
+// Eventos que já chegam atenuados pela rede (SV<1) só ganham o balanço estéreo.
+let SPOS=null;
+function spat(){if(!SPOS||typeof camera==='undefined')return null;
+  const dx=SPOS.x-camera.position.x,dz=SPOS.z-camera.position.z,d=Math.hypot(dx,dz),yw=P.camYaw||0;
+  const att=(typeof SV!=='undefined'&&SV<1)?1:Math.max(.02,1/(1+d*(SPOS.k||.18)));
+  const pan=d>.01?(dx*Math.cos(yw)-dz*Math.sin(yw))/d*Math.min(1,d/1.5)*.85:0;
+  return {a:att,p:pan}}
+function spOut(A,node){const sp=spat();if(sp&&A.createStereoPanner){const pn=A.createStereoPanner();pn.pan.value=sp.p;node.connect(pn);pn.connect(MB)}else node.connect(MB)}
+function sndAt(pos,fn,k){const old=SPOS;SPOS=pos?{x:pos.x,z:pos.z,k:k}:null;try{return fn()}finally{SPOS=old}}
 function nz(dur,gain,f,q,dec=3,rev=0,type='lowpass',when=0){const A=ac();if(!A)return;const n=A.sampleRate*dur|0,b=A.createBuffer(1,n,A.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,dec);
-  const s=A.createBufferSource(),fl2=A.createBiquadFilter(),g=A.createGain();s.buffer=b;fl2.type=type;fl2.frequency.value=f;fl2.Q.value=q;g.gain.value=gain*SV;s.connect(fl2);fl2.connect(g);g.connect(MB);
+  const s=A.createBufferSource(),fl2=A.createBiquadFilter(),g=A.createGain();s.buffer=b;fl2.type=type;fl2.frequency.value=f;fl2.Q.value=q;{const sp=spat();g.gain.value=gain*SV*(sp?sp.a:1)}s.connect(fl2);fl2.connect(g);spOut(A,g);
   if(rev){const r=A.createGain();r.gain.value=rev;g.connect(r);r.connect(RV);}s.start(A.currentTime+when);}
-function tn(f0,f1,dur,gain,type='sine',when=0){const A=ac();if(!A)return;const o=A.createOscillator(),g=A.createGain(),t=A.currentTime+when;o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);g.gain.setValueAtTime(Math.max(.0002,gain*SV),t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(MB);o.start(t);o.stop(t+dur+.02);}
+function tn(f0,f1,dur,gain,type='sine',when=0){const A=ac();if(!A)return;const o=A.createOscillator(),g=A.createGain(),t=A.currentTime+when;o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);{const sp=spat();g.gain.setValueAtTime(Math.max(.0002,gain*SV*(sp?sp.a:1)),t)}g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);spOut(A,g);o.start(t);o.stop(t+dur+.02);}
