@@ -131,6 +131,7 @@ function dispatchHit(h,dir){
   if(h.object.userData.doorIdx!==undefined&&doorImpact(h,n,dir.clone()))return;
   if(h.object.userData.rp){NET.hitPlayer(h.object.userData.rp,h.point,n);return;}
   if(h.object.userData.lampIM){hitLamp(h.instanceId);return;}
+  if(h.object.userData.streetLamp!==undefined){hitStreetLamp(h.object.userData.streetLamp);return;}
   const pp=[+h.point.x.toFixed(3),+h.point.y.toFixed(3),+h.point.z.toFixed(3)],pn=[+n.x.toFixed(3),+n.y.toFixed(3),+n.z.toFixed(3)];
   propFx(new V3(...pp),new V3(...pn));NET.send({t:'pi',p:pp,n:pn});}
 // Papelão (caixas/cargas): a bala ATRAVESSA. Retorna a caixa envolvente (mn/mx) se o acerto for numa caixa penetrável, senão null.

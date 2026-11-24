@@ -1,6 +1,6 @@
 // [HORNCAM] js/world/moon.js
 // Lua no céu: disco pálido com crateras suaves + halo grande (luz espalhada pela neblina) + névoa passando na frente.
-// Fica num quad que segue a câmera (fora do alcance da neblina), só aparece do lado de fora e some ao entrar num galpão.
+// Fica num quad que segue a câmera (fora do alcance da neblina), aparece de qualquer lugar; quem a esconde são as paredes e o teto (teste de profundidade).
 (function(){
   const D=new THREE.Vector3(-.55,.42,-.72).normalize(),DIST=80,SZ=188;
   const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,fog:false,blending:THREE.NormalBlending,
@@ -38,7 +38,7 @@
   let k=0,last=performance.now();
   const loop=now=>{requestAnimationFrame(loop);const dt=Math.min(.1,(now-last)/1000);last=now;
     if(typeof active==='undefined'||!active||typeof camera==='undefined'){q.visible=false;return}
-    const cp=camera.position,out=!(typeof LREG!=='undefined'&&LREG.whAt(cp.x,cp.z)>=0);
+    const cp=camera.position,out=true; // também visível de dentro (janelas, portas e portões): paredes e teto a ocultam pelo teste de profundidade
     k+=((out?1:0)-k)*Math.min(1,dt*1.5);
     q.visible=k>.01;if(!q.visible)return;
     q.position.copy(cp).addScaledVector(D,DIST);q.quaternion.copy(camera.quaternion);

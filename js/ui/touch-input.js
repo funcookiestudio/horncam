@@ -7,7 +7,7 @@ function joyRunUI(show,on){joyRun.classList.toggle('show',show);joyRun.classList
 addEventListener('touchstart',e=>{
   if(!active) return;
   for(const t of e.changedTouches){
-    if(t.target.closest('.btn,.ed')) continue;
+    if(t.target.closest('.btn,.ed,#opt,#help')) continue; // painéis de opções/ajuda não controlam o jogo
     if(t.clientX<innerWidth/2&&joy.id===null){
       joy={id:t.identifier,x0:t.clientX,y0:t.clientY,x:0,y:0,run:false};joyRunUI(false,false);
       joyEl.style.display='block';joyEl.style.left=(t.clientX-55)+'px';joyEl.style.top=(t.clientY-55)+'px';
@@ -15,7 +15,8 @@ addEventListener('touchstart',e=>{
   }
 },{passive:false});
 addEventListener('touchmove',e=>{
-  if(!active)return;e.preventDefault();
+  if(!active)return;if(e.target.closest&&e.target.closest('#opt,#help'))return; // deixa o painel rolar
+  e.preventDefault();
   for(const t of e.changedTouches){
     if(t.identifier===joy.id){
       const rx=t.clientX-joy.x0,ry=t.clientY-joy.y0;
