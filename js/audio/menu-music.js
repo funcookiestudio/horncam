@@ -4,7 +4,7 @@
 //  CORREDOR VAZIO (exploração)      ALGO NA CÂMERA (tensão)      CAÇADOR (ameaça)
 // No menu toca só a Pulsar Morto. Na partida ela continua e, de tempos em tempos, faz crossfade para outra faixa (nunca repete a atual).
 // Cada faixa é renderizada uma vez (OfflineAudioContext, 32 kHz) em segundo plano; só depois o áudio toca. Volume próprio no painel (MÚSICA).
-Object.assign(OPT,{mus:.6});
+Object.assign(OPT,{mus:.8});
 try{const o=JSON.parse(localStorage.getItem('horncam_opt')||'{}');if(typeof o.mus==='number')OPT.mus=Math.max(0,Math.min(1,o.mus))}catch(e){}
 (function(){
   const L=60,SR=32000,R=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)],q=f=>Math.round(f*L)/L; // ciclos inteiros em 60 s = sem estalo no loop
@@ -85,7 +85,7 @@ try{const o=JSON.parse(localStorage.getItem('horncam_opt')||'{}');if(typeof o.mu
     else{if(!cur)want='pulsar';if(!nextAt)nextAt=now+R(50,80)*1e3;
       if(now>nextAt){const ready=ORDER.filter(i=>buf[i]&&i!==cur);if(ready.length){want=pick(ready);nextAt=now+R(70,110)*1e3}}}
     if(on&&want&&want!==cur&&buf[want]){if(!st[want])start(A,want,game&&cur!==null);cur=want}
-    const vol=OPT.mus*(game?.32:.55);
+    const vol=OPT.mus*(game?.8:1.1);
     for(const id in st){const x=st[id],t=on&&id===cur?vol:0;x.g.gain.setTargetAtTime(t,A.currentTime,2.2);
       if(t===0&&x.g.gain.value<.003){try{x.s.stop()}catch(e){}delete st[id];if(cur===id)cur=null}}
   },250);

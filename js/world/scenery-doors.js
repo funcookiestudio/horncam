@@ -37,7 +37,13 @@ function regDoor(d,m,box){
   const key=Math.floor(box[0]/4)+','+Math.floor(box[2]/4);let a=DGRID.get(key);if(!a)DGRID.set(key,a=[]);a.push(['s',i]);
   m.userData.doorIdx=i;d.bi=i;d.mesh=m}
 function breakDoor(d,m){d.broken=true;if(d.plate&&d.plate.mesh){const pm=d.plate.mesh,x2=hitMeshes.indexOf(pm);if(x2>=0)hitMeshes.splice(x2,1);d.g.remove(pm);pm.geometry.dispose();d.plate.mesh=null}m.visible=false;const x=hitMeshes.indexOf(m);if(x>=0)hitMeshes.splice(x,1);
+  // porta/portão fechado que vira voxels (explosão): a colisão da folha original fica até a maioria dos voxels ser arrancada (ver doorSolTick)
+  if(d.a<.02&&d.sOn){d.keepSol=true;return}
   const i=solids.indexOf(d.sol);if(i>=0)solids.splice(i,1);d.sOn=false}
+function doorSolTick(){for(const d of doors){if(!d.keepSol)continue;const b=DECK.s&&DECK.s.L[d.bi],c=b&&b.ch;let free=!c;
+    if(c&&c.a){let o=0;const a=c.a,n=a.length;for(let k=0;k<n;k++)if(a[k])o++;free=o<n*.4}
+    if(free){d.keepSol=false;const i=solids.indexOf(d.sol);if(i>=0)solids.splice(i,1);d.sOn=false}}}
+setInterval(doorSolTick,600);
 // Tiro comum: a porta/portão continua funcionando, mas a chapa vira uma grade de voxels (como o vidro) que acompanha o movimento da porta.
 // Cada tiro abre um furo de verdade (some o aço, dá para ver através) com a borda levantada no lado de saída. Só a EXPLOSÃO quebra a porta
 // (vira voxels livres, ver decBlast); os furos já abertos passam para essa versão (doorPlateToChunk).
