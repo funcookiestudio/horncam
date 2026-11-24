@@ -21,7 +21,6 @@ input{-webkit-user-select:text;user-select:text}
 #ov #lst,#ov #roster{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 
 /* ===== menu limpo: só título, INICIAR, MULTIPLAYER e OPÇÕES; sala sob demanda; sem HUD de câmera nem subtítulo ===== */
-body.menu #rec,body.menu #ts,body.menu #hr,body.menu #id,body.menu #feed,body.menu #bot,body.menu #roster{display:none!important}
 #ov #sub{display:none!important}
 #ov h1{margin-bottom:6px}
 #ov b{margin-top:30px;padding:16px 0;font-size:19px}
@@ -32,3 +31,15 @@ body.menu #rec,body.menu #ts,body.menu #hr,body.menu #id,body.menu #feed,body.me
 #ov #lobby #optbtn{order:5}#ov #lobby #roomcode{order:3}#ov #lobby #lst{order:4}#ov #lobby #lstat{order:9}
 #ov #lstat{font-size:9px;letter-spacing:.2em;opacity:.35;margin-top:14px}
 @media (max-height:480px) and (min-aspect-ratio:23/20){#ov b{margin-top:12px;padding:9px 0;font-size:16px}#ov #lobby{margin-top:8px!important;gap:4px!important}#ov #lstat{margin-top:6px}}
+/* botões padronizados: mesma fonte e tamanho em INICIAR, MULTIPLAYER, OPÇÕES, CRIAR SALA, ENTRAR e campos; INICIAR sem retângulo */
+#ov b{border:0!important;background:none!important;box-shadow:none;padding:12px 0!important;font-size:15px!important;letter-spacing:.34em!important;padding-left:.34em!important;margin-top:26px!important;width:auto!important;min-width:0}
+#ov b:hover,#ov b:active{background:none!important;color:var(--fg)!important;text-shadow:0 0 14px rgba(255,255,255,.55)}
+#ov #lobby #mpbtn,#ov #lobby #optbtn{font-size:15px!important;letter-spacing:.34em!important;opacity:.7;padding:8px 4px}
+#ov #lobby input,#ov #lobby .lr button,#ov #lobby #nm{font-size:15px!important;letter-spacing:.2em}
+@media (max-height:480px) and (min-aspect-ratio:23/20){#ov b{font-size:13px!important;padding:7px 0!important;margin-top:8px!important}#ov #lobby #mpbtn,#ov #lobby #optbtn,#ov #lobby input,#ov #lobby .lr button{font-size:13px!important}}
+/* nome do estúdio: centro inferior da tela inicial */
+#studio{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:none;font:10px "Courier New",monospace;letter-spacing:.32em;padding-left:.32em;white-space:nowrap;color:var(--fg);opacity:.5;pointer-events:none;text-shadow:0 1px 6px rgba(0,0,0,.9)}
+body.menu #studio{display:block}
+#ov.leaving~#studio{opacity:0;transition:opacity .3s}
+#ov #lstat:empty{display:none}
+@media (max-height:340px){#studio{font-size:8px;bottom:6px}}

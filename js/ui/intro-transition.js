@@ -19,6 +19,7 @@ function introCancel(){ // Esc durante a transição: volta ao menu
   post.uniforms.sig.value=0;
 }
 function introTick(dt){ // início de cada quadro: avança o relógio e, ao terminar, entrega o jogo ao jogador
+  outroTick(dt);
   if(!INTRO.on)return;
   INTRO.t+=dt;if(INTRO.t<INTRO.Z)return;
   INTRO.on=false;GS.mode='play';
@@ -42,4 +43,29 @@ function wakeCam(dt){ // câmera do jogador: "liga" ligeiramente inclinada e se 
   WAKE.p=-.5*e;WAKE.r=.09*e*Math.sin(WAKE.t*8);WAKE.f=16*e;
   if(q<=0)WAKE.on=false;
   return WAKE;
+}
+
+// ---------- Saída do jogo (botão INÍCIO): o contrário da entrada ----------
+// 1) o jogo congela e o sinal da câmera cai (chiado/tremor); 2) a tela CRT "desliga" (fecha numa linha e apaga); 3) volta o menu saindo do preto.
+const OUTRO={on:false,t:0,A:.8,B:.7,C:.6,ph:0};
+function outroBegin(){
+  if(OUTRO.on||GS.mode==='menu')return;
+  try{introCancel()}catch(e){}
+  OUTRO.on=true;OUTRO.t=0;OUTRO.ph=0;GS.mode='outro';
+  active=false;ov.style.display='none';for(const k in keys)keys[k]=false;
+  try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
+  if(isTouch){const t=document.getElementById('touch');if(t)t.style.display='none'}
+  try{hudEl.classList.remove('on')}catch(e){}
+}
+function outroTick(dt){
+  if(!OUTRO.on)return;
+  OUTRO.t+=dt;const el=document.getElementById('shut');
+  if(OUTRO.ph===0){const p=Math.min(1,OUTRO.t/OUTRO.A);
+    post.uniforms.sig.value=Math.min(1,Math.pow(p,1.2)*(Math.random()>.15?1:.5));post.uniforms.shake.value=p*4;
+    if(OUTRO.t>=OUTRO.A){OUTRO.ph=1;OUTRO.t=0;el.className='go'}
+  }else if(OUTRO.ph===1){post.uniforms.sig.value=1;post.uniforms.shake.value=2;
+    if(OUTRO.t>=OUTRO.B){OUTRO.ph=2;OUTRO.t=0;
+      GS.mode='menu';ov.style.display='flex';active=false;post.uniforms.sig.value=0;post.uniforms.shake.value=0;
+      el.className='out'}
+  }else if(OUTRO.t>=OUTRO.C){OUTRO.on=false;el.className=''}
 }

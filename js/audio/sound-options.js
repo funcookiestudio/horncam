@@ -21,7 +21,7 @@ function optApply(){try{if(AC&&AC._mg)AC._mg.gain.setTargetAtTime(optGain(),AC.c
   // INÍCIO: volta à tela inicial (sala de monitores) a partir da partida
   document.getElementById('opthome').addEventListener('click',()=>{window.optPaused=false;op.classList.remove('show');
     try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
-    try{introCancel()}catch(e){}GS.mode='menu';ov.style.display='flex';active=false;for(const k in keys)keys[k]=false;
+    try{outroBegin()}catch(e){introCancel();GS.mode='menu';ov.style.display='flex';active=false}
     });
   op.addEventListener('click',e=>{if(e.target===op)window.optClose();});
   // com o painel aberto as teclas não chegam ao jogo (WASD, tiro etc.); Esc continua fechando

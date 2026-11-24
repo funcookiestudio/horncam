@@ -19,3 +19,17 @@
 #id{position:absolute;right:16px;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:right}
 #bot{position:absolute;left:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);opacity:.85}
 #bot{display:none!important}
+
+/* saída do jogo: tela CRT desligando (fecha numa linha, a linha encolhe e apaga) e o menu volta saindo do preto */
+#shut{position:fixed;inset:0;z-index:30;pointer-events:none;display:none}
+#shut.go,#shut.out{display:block}
+#shut .h{position:absolute;left:0;right:0;background:#000;height:50.4%}
+#shut .t{top:0;transform:translateY(-101%)}#shut .u{bottom:0;transform:translateY(101%)}
+#shut .l{position:absolute;left:0;right:0;top:calc(50% - 1px);height:2px;background:#fff;box-shadow:0 0 14px 3px rgba(255,255,255,.85);opacity:0}
+#shut.go .t{animation:st .7s cubic-bezier(.6,0,.9,.4) forwards}#shut.go .u{animation:sb .7s cubic-bezier(.6,0,.9,.4) forwards}
+#shut.go .l{animation:sl .7s forwards}
+#shut.out{background:#000;animation:so .6s ease-out forwards}#shut.out .h,#shut.out .l{display:none}
+@keyframes st{0%{transform:translateY(-101%)}60%,100%{transform:translateY(0)}}
+@keyframes sb{0%{transform:translateY(101%)}60%,100%{transform:translateY(0)}}
+@keyframes sl{0%,55%{opacity:0;transform:scaleX(1)}62%{opacity:1;transform:scaleX(1)}85%{opacity:1;transform:scaleX(.04)}100%{opacity:0;transform:scaleX(0)}}
+@keyframes so{0%{background:#000}100%{background:transparent}}

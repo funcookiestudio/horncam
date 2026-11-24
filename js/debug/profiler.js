@@ -3,6 +3,9 @@
 let perfDiagOn=false,perfBypassPost=false,perfVolLight=true,perfShadows=true,perfVoxelsVisible=true,perfSamples=0,perfReportTimer=0;
 const perfTimes={logic:0,network:0,effects:0,lighting:0,scene:0,post:0,total:0};
 const perfPanel=document.createElement('pre');
+// opção FPS: o contador só aparece em jogo e quando ligado no painel de opções
+Object.assign(OPT,{fps:false});try{const o=JSON.parse(localStorage.getItem('horncam_opt')||'{}');if(typeof o.fps==='boolean')OPT.fps=o.fps}catch(e){}
+{const b=document.getElementById('optfps');if(b){const ui=()=>{b.textContent=OPT.fps?'LIGADO':'DESLIGADO';b.classList.toggle('on',OPT.fps)};ui();b.addEventListener('click',()=>{OPT.fps=!OPT.fps;ui();optApply()});document.getElementById('optbtn').addEventListener('click',ui)}}
 perfPanel.id='horncam-perf-panel';
 perfPanel.style.cssText='display:none;position:fixed;z-index:99999;left:12px;top:90px;max-width:min(560px,90vw);padding:12px;background:rgba(0,0,0,.88);color:#9fffb0;border:1px solid #4a8;border-radius:6px;font:12px/1.5 monospace;white-space:pre-wrap;pointer-events:none';
 document.body.appendChild(perfPanel);
@@ -77,7 +80,7 @@ function tick(){
   if(active&&!PH.dead)aliveT+=dt;
   if(MENU_ON){const d=new Date();tsEl.textContent=p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()+'  '+p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds());}
   else{const t=Math.floor(aliveT);tsEl.textContent='TEMPO VIVO '+p2(t/3600|0)+':'+p2((t/60|0)%60)+':'+p2(t%60);}
-  fpsAcc+=dt;fpsN++; if(fpsAcc>.5){fpsEl.textContent=Math.round(fpsN/fpsAcc)+' FPS';fpsAcc=fpsN=0;}
+  fpsAcc+=dt;fpsN++; if(fpsAcc>.5){fpsEl.textContent=(OPT.fps&&GS.mode==='play')?Math.round(fpsN/fpsAcc)+' FPS':'';fpsAcc=fpsN=0;}
 }
 function update(dt){
   // entrada

@@ -27,13 +27,14 @@
 <body>
 <canvas id="c"></canvas>
 <canvas id="lens" style="pointer-events:none"></canvas>
+<div id="shut"><div class="h t"></div><div class="h u"></div><div class="l"></div></div>
 <div id="boot"><div class="h t"></div><div class="h u"></div><div class="l"></div></div>
 <div id="hud">
   <div id="rec"><i></i>REC</div>
   <div id="ts">--</div>
   <div id="hr"><canvas id="ecg" width="300" height="68"></canvas></div>
   <div id="roster"></div>
-  <div id="id"><span id="pname">ISLAND-01</span><br>UNIT 4471<br><span id="fps"></span></div>
+  <div id="id"><span id="pname">PLAYER</span><br>UNIT 4471<br><span id="fps"></span></div>
   <div id="feed"></div>
   <div id="bot"><span id="spd">WALK</span> | LANTERNA <span id="fl">OFF</span> | <span id="ammo">MK4 TACTICAL 30/120</span></div>
 </div>
@@ -72,26 +73,31 @@
     <div class="lr" id="lr2"><input id="rc" maxlength="4" placeholder="CÓDIGO" autocomplete="off" autocapitalize="characters"><button id="joinroom">ENTRAR</button></div>
     <button id="optbtn" type="button">OPÇÕES</button>
     <div id="roomcode"></div>
-    <div id="lstat">FUN🍪COOKIE STUDIO</div>
+    <div id="lstat"></div>
     <div id="lst"></div>
   </div>
 </div>
+<div id="studio">FUN🍪COOKIE STUDIO</div>
 <div id="opt">
   <div class="box">
     <h2>OPÇÕES</h2>
+    <h3 class="sec">ÁUDIO</h3>
     <div class="row"><span>SOM</span><button id="optdn" class="vb" type="button" aria-label="Diminuir volume">−</button><input id="optvol" type="range" min="0" max="100" step="1"><button id="optup" class="vb" type="button" aria-label="Aumentar volume">+</button><span id="optv"></span></div>
     <div class="row"><span>MUDO</span><button id="optmute" type="button">DESLIGADO</button></div>
+    <div class="row"><span>MÚSICA</span><input id="optmus" type="range" min="0" max="100" step="5"><span id="optmusv"></span></div>
+    <div class="row"><span>ESTÁTICA TV</span><input id="opttv" type="range" min="0" max="100" step="5"><span id="opttvv"></span></div>
+    <div class="row"><span>AMBIENTE</span><button id="opthorror" type="button">LIGADO</button></div>
+    <h3 class="sec">IMAGEM</h3>
     <div class="row"><span>ESCURIDÃO</span><input id="optdark" type="range" min="0" max="100" step="5"><span id="optdarkv"></span></div>
     <div class="row"><span>REFLEXOS</span><button id="optrefl" type="button">LIGADO</button><input id="optreflI" type="range" min="0" max="100" step="5"><span id="optreflv"></span></div>
     <div class="row"><span>SUJEIRA</span><button id="optdirt" type="button">LIGADO</button></div>
     <div class="row"><span>LENTE SUJA</span><input id="optlens" type="range" min="0" max="100" step="5"><span id="optlensv"></span></div>
-    <div class="row"><span>MÚSICA</span><input id="optmus" type="range" min="0" max="100" step="5"><span id="optmusv"></span></div>
-    <div class="row"><span>TVs (ESTÁTICA)</span><input id="opttv" type="range" min="0" max="100" step="5"><span id="opttvv"></span></div>
+    <p class="hint">Se o jogo ficar pesado, desligue REFLEXOS e SUJEIRA.</p>
+    <h3 class="sec">JOGO</h3>
+    <div class="row"><span>FPS</span><button id="optfps" type="button">DESLIGADO</button></div>
     <div class="row" id="pwarow" hidden><span>APP</span><button id="optinstall" type="button">INSTALAR</button></div>
     <p class="hint" id="pwahint" hidden>iPhone/iPad: toque em Compartilhar › Adicionar à Tela de Início.</p>
     <div class="row" id="edrow" hidden><span>CONTROLES</span><button id="opted" type="button">EDITAR LAYOUT</button></div>
-    <div class="row"><span>AMBIENTE</span><button id="opthorror" type="button">LIGADO</button></div>
-    <p class="hint">Se o jogo ficar pesado, desligue REFLEXOS e SUJEIRA.</p>
     <div class="row"><span>AJUDA</span><button id="helpbtn" type="button">COMO JOGAR</button></div>
     <div class="opbtns"><button id="optclose" type="button">FECHAR</button><button id="opthome" type="button">INÍCIO</button></div>
   </div>
@@ -173,6 +179,7 @@
 <script src="js/effects/muzzle-smoke.js"></script>
 <script src="js/world/street-lights.js"></script>
 <script src="js/world/outdoor-fog.js"></script>
+<script src="js/world/moon.js"></script>
 <script src="js/pwa.js"></script>
 <script src="js/rendering/shader-warmup.js"></script>
 <script src="js/ui/touch-controls.js"></script>

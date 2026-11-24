@@ -13,7 +13,7 @@ function lobbyConnected(){
   const rc=$('roomcode');rc.style.display='block';rc.textContent=NET.code;
   rc.onclick=()=>{try{navigator.clipboard.writeText(NET.code);setStatus('Código copiado.');}catch(e){}};
   setStatus(NET.host?'Sala criada! Passe o código (toque para copiar) e clique em INICIAR.':'Conectado! Clique em INICIAR.');
-  $('pname').textContent=NET.name;setBusy(false);refreshUI();
+  setPname();setBusy(false);refreshUI();
 }
 function netError(e){
   const t=e&&e.type;
@@ -81,3 +81,7 @@ addEventListener('pagehide',()=>{try{NET.peer&&NET.peer.destroy();}catch(e){}});
 
 // menu limpo: o bloco de sala só abre ao tocar em MULTIPLAYER (ou quando já conectado)
 {const mb=$('mpbtn'),lb=$('lobby');if(mb)mb.addEventListener('click',()=>{const off=lb.classList.toggle('mp-off');mb.textContent=off?'MULTIPLAYER ▾':'MULTIPLAYER ▴'})}
+
+// nome do jogador no bloco do canto (máx. 7 caracteres): acompanha o campo de nome
+function setPname(){const v=($('nm').value||'').replace(/[^\w \-À-ÿ]/g,'').trim();$('pname').textContent=(v||'PLAYER').toUpperCase().slice(0,7)}
+$('nm').addEventListener('input',setPname);setPname();
