@@ -18,7 +18,7 @@ function lightTick(dt){
     // FALHA da lanterna: contato ruim, apaga e acende em rajadas. Mais comum andando e muito mais correndo
     let tg=2.6*flDip;
     if(flFail>0){flFail-=dt;flTog-=dt;
-      if(flTog<=0){flOn=!flOn;flTog=flOn?.03+Math.random()*.12:.04+Math.random()*.16;if(!flOn){try{tn(700,260,.03,.05,'square')}catch(e){}}}
+      if(flTog<=0){flOn=!flOn;flTog=flOn?.03+Math.random()*.12:.04+Math.random()*.16;}
       if(flFail<=0)flOn=true;
       if(!flOn)tg=0}
     else{const rate=P.sprinting?.5:(Math.hypot(P.vel.x,P.vel.z)>.5?.1:.04);
