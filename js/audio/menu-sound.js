@@ -67,7 +67,7 @@ function menuAudioTick(dt,on){
   if(on&&!MA)maInit();
   if(!MA)return;const A=MA.A;
   if(on&&A.state==='suspended'){try{A.resume();}catch(e){}}
-  if(on!==maOn){maOn=on;MA.out.gain.setTargetAtTime(on?1:0,A.currentTime,on?.4:.08);}
+  if(on!==maOn){maOn=on;MA.out.gain.setTargetAtTime(on?tvGain():0,A.currentTime,on?.4:.08);}
   if(!on||A.state!=='running')return;
   const t=A.currentTime;
   MA.sg.gain.setTargetAtTime(.06+Math.random()*.1,t,.06);
@@ -176,10 +176,10 @@ function fxTick(dt,sprint,sp){
   const k=r=>1-Math.exp(-dt*r);
   W.bk*=Math.exp(-dt*30);bolt.position.z+=((W.lock?1:W.bk)*.045+.01-bolt.position.z)*k(45);
   W.bt-=dt;if(W.bt<=0)W.bs=0;
-  const st=Math.floor(P.bobT/Math.PI);if(st!==W.st){W.st=st;if(P.onGround&&sp>.6)sfx('step',sprint?1:P.crouch?.4:.7);}
+  const st=Math.floor(P.bobT/Math.PI);if(st!==W.st){W.st=st;if(P.onGround&&sp>.6)sfx('step',(sprint?1:P.crouch?.4:.7)*1.45);}
   if(P.landKick>.05&&!W.lk)sfx('step',1.5);W.lk=P.landKick>.05;
   W.ex+=((sprint?1:0)-W.ex)*k(sprint?.35:.12);
-  if(AC&&BR)BR.gain.setTargetAtTime((.015+.2*W.ex)*(.55+.45*Math.sin(time*(2.4+W.ex*3.2))),AC.currentTime,.06);
+  // respiração removida (BR fica mudo)
   for(const s of shells){if(!s.m.visible)continue;s.life-=dt;if(s.life<=0){s.m.visible=false;continue;}
     s.v.y-=9.8*dt;s.m.position.addScaledVector(s.v,dt);s.m.rotation.x+=s.w.x*dt;s.m.rotation.z+=s.w.z*dt;
     if(s.m.position.y<.012){s.m.position.y=.012;if(Math.abs(s.v.y)>1.2)sfx('shell');s.v.y*=-.35;s.v.x*=.5;s.v.z*=.5;s.w.multiplyScalar(.5);}}

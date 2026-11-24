@@ -46,9 +46,10 @@ function lampTick(dt){
   // Somente a lâmpada defeituosa executa animação de intensidade.
   let dirty=false;
   for(const L of lamps){let f=L.off?0:1,su=1;
-    if(!L.off&&L.ont!==undefined&&L.ont<.4){L.ont+=dt;su=L.ont<0?0:(Math.sin(L.ont*70+L.ph*9)>-.2?1:.12)}
+    if(!L.off&&L.ont!==undefined&&L.ont<.9){L.ont+=dt;su=L.ont<0?0:((Math.sin(L.ont*61+L.ph*9)+.8*Math.sin(L.ont*23+L.ph*5))>-1.5+L.ont*1.9?1:.08)}   // ao ligar: falha em rajadas, cada vez mais firme até acender
     L.su=su;let col=f*su;
-    if(L.bad&&!L.off){
+    if(L.bad&&!L.off&&L.lead!==undefined&&L.lead!==L.id&&L.lead>=0){L.f=lamps[L.lead].f;f=Math.max(0,Math.min(1.4,L.f));col=f*su}   // membro do grupo: pisca junto com a líder
+    else if(L.bad&&!L.off){
       L.glitchT-=dt;
       if(L.glitchT<=0){
         const r=Math.random();

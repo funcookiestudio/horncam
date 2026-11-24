@@ -126,17 +126,22 @@ function voxImpact(h,n,dir){
   voxFx(new V3(...p),new V3(...nn),new V3(...dd),cnt,br,seed,false);
   NET.send({t:'vi',p,n:nn,d:dd,c:cnt,b:br,s:seed})}
 function blast(pt,R,n,seed,quiet){seedV(seed===undefined?(Math.random()*1e9)|0:seed);
-  const RA=R*1.25;decBlast(pt,R,quiet);ISL=true;
-  const kp=lobesApply([[pt,R,1]],new V3(pt.x-RA,pt.y-RA,pt.z-RA),new V3(pt.x+RA,pt.y+RA,pt.z+RA),null,n);
-  {PNT=true;const RP=R*3.7,kq=lobesApply([[pt,R,1]],new V3(pt.x-RP,pt.y-RP,pt.z-RP),new V3(pt.x+RP,pt.y+RP,pt.z+RP),null,n);PNT=false;
-   if(!quiet)kq.slice(0,40).forEach(q=>{const dr=q.clone().sub(pt);dr.divideScalar(dr.length()||1);dr.y+=.6;dr.normalize();deb1(q,dr,dbk(q.br),R2(.006,.016),R2(4,10),0)})}
+  const RA=R*1.25,RP=R*3.7,vr=VR,bA=[new V3(pt.x-RA,pt.y-RA,pt.z-RA),new V3(pt.x+RA,pt.y+RA,pt.z+RA)],bP=[new V3(pt.x-RP,pt.y-RP,pt.z-RP),new V3(pt.x+RP,pt.y+RP,pt.z+RP)];
+  const debP=kq=>kq.slice(0,40).forEach(q=>{const dr=q.clone().sub(pt);dr.divideScalar(dr.length()||1);dr.y+=.6;dr.normalize();deb1(q,dr,dbk(q.br),R2(.006,.016),R2(4,10),0)});
+  const debA=kp=>kp.slice(0,110).forEach(q=>{const dr=q.clone().sub(pt);dr.divideScalar(dr.length()||1);dr.y+=.35;dr.normalize();deb1(q,dr,dbk(q.br),R2(.03,.09),R2(7,14),0)});
+  decBlast(pt,R,quiet);ISL=true;
+  if(quiet){ // réplica remota: tudo de uma vez
+    lobesApply([[pt,R,1]],bA[0],bA[1],null,n);
+    PNT=true;lobesApply([[pt,R,1]],bP[0],bP[1],null,n);PNT=false;
+    ISL=false;unseedV();cutSteel(pt,R*.3);bendSteel(pt,R);warpMetal(pt,R);return}
+  // jogo local: a escavação (a parte cara) é feita em fatias de ~5 ms por quadro (rebar.js: lobesJob), com a mesma ordem e o mesmo sorteio; o clarão, o som e o dano saem na hora
+  lobesJob([[pt,R,1]],bA[0],bA[1],null,n,kp=>{
+    {const sv=VR,si=ISL;VR=vr;ISL=true;PNT=true;lobesJob([[pt,R,1]],bP[0],bP[1],null,n,debP);PNT=false;VR=sv;ISL=si} // 2ª passada: manchas de pintura, alcance grande
+    cutSteel(pt,R*.3);bendSteel(pt,R);warpMetal(pt,R);
+    debA(kp)}); // estilhaços: concreto e tijolo arrancados voam para fora
   ISL=false;unseedV();
-  cutSteel(pt,R*.3);bendSteel(pt,R);warpMetal(pt,R);
-  if(quiet)return;
   // onda de choque empurra o entulho que já estava no chão
   {const W=R*2.4;for(const d of debs){const dv=d.m.position.clone().sub(pt),l=dv.length();if(l<W&&l>.001){dv.divideScalar(l);const k=1-l/W;d.rest=false;d.v.addScaledVector(dv,9*k).add(new V3(0,3.5*k,0))}}}
-  // estilhaços: concreto e tijolo arrancados voam para fora
-  kp.slice(0,110).forEach(q=>{const dr=q.clone().sub(pt);dr.divideScalar(dr.length()||1);dr.y+=.35;dr.normalize();deb1(q,dr,dbk(q.br),R2(.03,.09),R2(7,14),0)});
   fxBoom(pt,R,n);
   nz(.9,1,260,.8,2,.9);tn(90,28,.6,1);P.landKick=.1;W.rk+=.04;
   {const d=Math.hypot(P.pos.x-pt.x,P.pos.z-pt.z),Rr=4.2;if(d<Rr)hurt(Math.round(80*(1-d/Rr)));}}

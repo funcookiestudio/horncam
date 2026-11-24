@@ -73,8 +73,8 @@ function lvStartFull(wi){
     r=LV.cs/LV.fs,fx=nx*r,fy=ny*r,fz=nz*r,N=nx*ny*nz;
   const chunks=[];for(const c of vchunks){if(c.max.x<x0||c.min.x>x0+nx*LV.cs||c.max.z<z0||c.min.z>z0+nz*LV.cs)continue;chunks.push(c)}
   const base=new Float32Array(N),g0=new Float32Array(N),g1=new Float32Array(N),slots=[-1,-1],items=[];
-  let si=0;for(const id of LREG.byWh[wi]){const L=lamps[id];if(L.bad&&!L.dead&&si<2){slots[si]=id;items.push({L,t:si?g1:g0});si++}}
-  for(const id of LREG.byWh[wi]){const L=lamps[id];if(slots.indexOf(id)>=0||L.off||!(L.lvI>0))continue;items.push({L,t:base})}
+  LREG.BADG[wi].forEach((g,si)=>{if(!g.length)return;slots[si]=Math.min(...g);for(const id of g)items.push({L:lamps[id],t:si?g1:g0})}); // grupo de defeituosas: um canal, piscam juntas
+  for(const id of LREG.byWh[wi]){const L=lamps[id];if((L.bad&&!L.dead)||L.off||!(L.lvI>0))continue;items.push({L,t:base})}
   LV.job={kind:'full',stage:0,wi,N,chunks,ci:0,decor:lvCollectDecor(x0,z0,nx*LV.cs,nz*LV.cs),di:0,items,ii:0,cell:0,t0:performance.now(),base,g0,g1,slots,
     occ:new Uint8Array(fx*fy*fz),x0,y0:0,z0,nx,ny,nz,fx,fy,fz}}
 // delta: contribuição de um conjunto de luminárias, aplicada em cima do volume atual
@@ -155,12 +155,12 @@ function lvDyn(){
   const m=LVU.mul.value;m.x=1;m.y=0;m.z=0;
   for(let s=0;s<2;s++){const id=LV.badSlots[s];if(id<0)continue;const L=lamps[id],v=L.off?0:L.f*(L.su===undefined?1:L.su);if(s)m.z=v;else m.y=v}
   const m2=LVU.mul2.value;m2.set(1,0,0,0);for(let s=0;s<2;s++){const id=LV.v2.badSlots[s];if(id<0)continue;const L=lamps[id],v=L.off?0:L.f*(L.su===undefined?1:L.su);if(s)m2.z=v;else m2.y=v}
-  if(LV.trLamps){let s=0,n=0,done=true;for(const L of LV.trLamps){if(L.off)continue;n++;s+=(L.su===undefined?1:L.su);if(L.ont!==undefined&&L.ont<.4)done=false}
+  if(LV.trLamps){let s=0,n=0,done=true;for(const L of LV.trLamps){if(L.off)continue;n++;s+=(L.su===undefined?1:L.su);if(L.ont!==undefined&&L.ont<.9)done=false}
     m.w=n?s/n:0;if(done){lvFoldTr();lvUpload();m.w=0}}else m.w=0}
 // ---- detecção do que mudou ----
 function lvPoll(){
   const on=[],off=[],wi=LV.wi;
-  for(const id of LREG.byWh[wi]){if(LV.badSlots.indexOf(id)>=0)continue;const L=lamps[id],now=L.off?0:1;
+  for(const id of LREG.byWh[wi]){if(lamps[id].bad&&!lamps[id].dead)continue;const L=lamps[id],now=L.off?0:1;
     if(now!==LV.snap[id]){LV.snap[id]=now;(now?on:off).push(L)}}
   if(off.length)LV.queue.push(['off',off]);
   if(on.length)LV.queue.push(['on',on])}

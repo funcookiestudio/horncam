@@ -33,8 +33,8 @@ function menuLens(dt,w,h){
   glareP.x=mlv.x*.5+.5;glareP.y=mlv.y*.5+.5;
   post.uniforms.glare.value=glareS;post.uniforms.lpos.value.set(glareP.x,glareP.y);
   const bloom=Math.min(1,.25+glareS*.9);
-  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,.07+bloom*.4);
-  const k=Math.max(w,h)/512;lx.drawImage(dirt,w/2-256*k,h/2-256*k,512*k,512*k);lx.globalAlpha=1;
+  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,(.07+bloom*.4)*OPT.lensDirt);
+  const k=Math.max(w,h)/512;if(OPT.lensDirt>.01)lx.drawImage(dirt,w/2-256*k,h/2-256*k,512*k,512*k);lx.globalAlpha=1;
   flare({x:glareP.x*w,y:(1-glareP.y)*h,I:.6+glareS*.5},w,h,Math.min(w,h));
 }
 // Lente otimizada: mantém sujeira, flare e ofuscamento, mas limita raycasts caros.
@@ -107,8 +107,8 @@ function lensTick(dt){
   if(W.fl>0){fl.getWorldPosition(lvv).project(camera);visible.unshift({x:(lvv.x*.5+.5)*w,y:(-lvv.y*.5+.5)*h,I:.9,muz:true});bloom=Math.min(1,bloom+.6);}
   if(flashOn)bloom=Math.min(1,bloom+.12);
   // A sujeira é uma textura pré-gerada; flares só são desenhados para as quatro fontes mais fortes.
-  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,.07+bloom*.4);
-  const sc=Math.max(w,h)/512;lx.drawImage(dirt,w/2-256*sc,h/2-256*sc,512*sc,512*sc);lx.globalAlpha=1;
+  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,(.07+bloom*.4)*OPT.lensDirt);
+  const sc=Math.max(w,h)/512;if(OPT.lensDirt>.01)lx.drawImage(dirt,w/2-256*sc,h/2-256*sc,512*sc,512*sc);lx.globalAlpha=1;
   const m=Math.min(w,h);for(const c of visible.slice(0,2)){if(c.I>.04)flare(c,w,h,m);}
 }
 updAmmo();

@@ -24,14 +24,16 @@ float lvN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(lvH(
 vec3 lvGrime(vec3 col,vec3 p,vec3 n){
   float up=smoothstep(.75,.95,n.y),low=1.-smoothstep(0.,1.6,p.y);
   float big=lvN(p.xz*.35+p.y*.1),mid=lvN(p.xz*1.7+vec2(p.y*2.1,0.)),fine=lvN(p.xz*7.+p.y*5.);
-  float stain=smoothstep(.45,.8,big)*(.5+.5*mid);
+  float stain=smoothstep(.4,1.,big)*(.5+.5*mid);                    // borda larga = umidade difusa, sem recorte duro
   float mold=low*smoothstep(.4,.9,mid)*(1.-up*.5);
-  float drip=smoothstep(.55,.9,lvN(vec2((p.x+p.z)*3.,p.y*.25)))*(1.-smoothstep(.2,.6,abs(n.y)));
-  col*=1.-.42*stain-.22*(1.-fine)*(.3+.7*up)-.2*drip;
+  float drip=smoothstep(.45,1.,lvN(vec2((p.x+p.z)*3.,p.y*.25)))*(1.-smoothstep(.2,.6,abs(n.y)));
+  col*=1.-.15*stain*(.55+.45*lvN(p.xz*13.+p.y*3.))-.15*(1.-fine)*(.3+.7*up)-.09*drip;
+  col=mix(col,col*vec3(.86,.76,.6),stain*.4);                       // mancha = sujeira amarronzada, não sombra
   col=mix(col,col*vec3(.55,.78,.42),mold*.75);
   vec2 g=floor(p.xz/7.);float hv=lvH(g+.5);
   if(hv>.9&&up>.5){vec2 c=(g+.2+.6*vec2(lvH(g+3.1),lvH(g+7.7)))*7.;float r=.35+.9*lvH(g+9.3),d=length(p.xz-c)+(lvN(p.xz*6.)-.5)*.35;
-    col=mix(col,vec3(.2,.025,.02),(1.-smoothstep(r*.5,r,d))*.9*up);}
+    float bm=(1.-smoothstep(r*.5,r,d))*up,rim=smoothstep(r*.55,r*.8,d)*(1.-smoothstep(r*.8,r,d));
+    col=mix(col,vec3(.24,.03,.022)*(.55+.9*lvN(p.xz*17.)),bm*.78+rim*.25);}   // sangue: miolo manchado, borda mais escura
   return col;}
 float lvT(vec3 p,bool s){vec3 u=s?(p-lvOrg2)/lvSize2:(p-lvOrg)/lvSize;vec3 t=vec3(u.x,u.z,u.y);return s?dot(textureLod(lvTex2,t,0.),lvMul2):dot(textureLod(lvTex,t,0.),lvMul);}
 float lvMask(vec3 u){return smoothstep(0.,.05,min(min(u.x,1.-u.x),min(u.z,1.-u.z)))*smoothstep(1.,.93,u.y)*step(0.,u.y+.02);}
@@ -42,12 +44,14 @@ if(lvOn>0.){
   float lvm=lvMask((lvp-lvOrg)/lvSize);bool lvsec=false;
   if(lvm<=0.&&lvOn2>0.){lvm=lvMask((lvp-lvOrg2)/lvSize2);lvsec=true;}   // fora do volume ativo: vê o galpão visitado antes (buraco, janela)
   if(lvm>0.){
-    float lc=lvT(lvp,lvsec);
-    vec3 lg=vec3(lvT(lvp+vec3(lvCs,0.,0.),lvsec)-lc,lvT(lvp+vec3(0.,lvCs,0.),lvsec)-lc,lvT(lvp+vec3(0.,0.,lvCs),lvsec)-lc);
     vec3 lwn=inverseTransformDirection(normal,viewMatrix);
+    vec3 lsp=lvp+lwn*lvCs*.55;                                       // amostra no ar da sala, não dentro da célula da parede/chão (tira a faixa escura no pé)
+    float lc=lvT(lsp,lvsec);
+    vec3 lg=vec3(lvT(lsp+vec3(lvCs,0.,0.),lvsec)-lc,lvT(lsp+vec3(0.,lvCs,0.),lvsec)-lc,lvT(lsp+vec3(0.,0.,lvCs),lvsec)-lc);
     float lgl=length(lg);vec3 ld=lgl>1e-4?lg/lgl:lwn;
-    float lnl=mix(.04,1.,smoothstep(-.2,.5,dot(lwn,ld)));   // face de costas para a luz (lado de fora da parede) quase não recebe: sem vazamento pela parede
-    reflectedLight.directDiffuse+=lc*lvGain*lvm*lnl*lvTint*material.diffuseColor;
+    float lnl=mix(.04,1.,smoothstep(-.1,.68,dot(lwn,ld)));   // face de costas para a luz (lado de fora da parede) quase não recebe: sem vazamento pela parede
+    float lao=lwn.y>.5?1.:mix(.5,1.,smoothstep(0.,1.5,lvp.y))*mix(.72,1.,smoothstep(0.,1.2,6.4-lvp.y));   // contato: base e topo de paredes e colunas mais escuros
+    reflectedLight.directDiffuse+=lc*lvGain*lvm*lnl*lao*lvTint*material.diffuseColor;
     // chão molhado: reflete a luz do plano das lâmpadas na direção do espelho (1 leitura extra); poças por ruído
     if(lvRefl>0.&&lwn.y>.9&&lvp.y<.25){
       vec3 lvV=normalize(cameraPosition-lvp),rv=reflect(-lvV,lwn);

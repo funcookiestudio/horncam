@@ -144,11 +144,11 @@ function fxBoom(P,R,n){if(n)boomExtra(P,R,n);
   for(let i=0;i<12;i++){const o=new V3(R2(-1,1),R2(-.3,.5),R2(-1,1)).normalize();bsmk(P.clone().addScaledVector(o,R*.7),o.clone().multiplyScalar(R2(3,6)),R*R2(1.6,2.6),R2(1.8,3.2),0xc9c4b8,.55)}
   BSH=Math.max(BSH,Math.min(1.4,12/(dp+3)));
   if(dp<9){bFl.style.transition='none';bFl.style.opacity=String(.75*(1-dp/9));requestAnimationFrame(()=>requestAnimationFrame(()=>{bFl.style.transition='opacity .9s ease-out';bFl.style.opacity='0'}))}}
-function lobesApply(lobes,mn,mx,tun,n){
-  const kp=[],v=new V3(),w=new V3(),seed=VR()*100;
-  for(const c of vchunks){
-    if(PNT&&!c.paint)continue;
-    if(c.max.x<mn.x||c.min.x>mx.x||c.max.y<mn.y||c.min.y>mx.y||c.max.z<mn.z||c.min.z>mx.z)continue;
+// A escavação é feita chunk a chunk (lobesChunk): lobesApply faz tudo de uma vez; lobesJob entrega os mesmos chunks, na mesma ordem e com o mesmo
+// sorteio, em fatias de tempo (explosão no jogo local não trava o quadro). Resultado idêntico nos dois caminhos.
+function lobesChunk(c,st){
+  const {lobes,mn,mx,tun,n,kp,v,w,seed}=st;
+  {
     if(!c.a){voxAlloc(c);genRebar(c)}
     const hd=c.hard||1,vs=c.vs,bb=vs*.8,nx=c.n[0],ny=c.n[1],nz=c.n[2],a=c.a,fr=c.fr,
       x0=Math.max(0,Math.floor((mn.x-c.min.x)/vs)),x1=Math.min(nx-1,Math.floor((mx.x-c.min.x)/vs)),
@@ -165,8 +165,18 @@ function lobesApply(lobes,mn,mx,tun,n){
       if(!dead&&tun){w.copy(v).sub(tun.P0);const t=w.dot(tun.d);if(t>-.01&&t<tun.tl/hd){const d2=w.lengthSq()-t*t,lim=tun.tr/hd*1.4;if(d2<lim*lim){if(q<0)q=vnz(v.x*40+seed,v.y*40,v.z*40);const rt=tun.tr/hd*(.7+.7*q);dead=d2<rt*rt}}}
       if(dead){a[id]=0;kc++;if(kp.length<(ISL?150:40)&&VR()<(ISL?.004:.3)){const k_=v.clone();k_.br=c.dcode||(c.type==='brick'?1:0);kp.push(k_)}
         for(const o of NBR){const X=ix+o[0],Y=iy+o[1],Z=iz+o[2];if(X>=0&&Y>=0&&Z>=0&&X<nx&&Y<ny&&Z<nz)fr[(Y*nz+Z)*nx+X]=1}}}
-    if(kc){if(ISL)dropIslands(c,x0,x1,y0,y1,z0,z1,lobes[0][0]);else dropOrphans(c,x0,x1,y0,y1,z0,z1,n);if(DEFER)DIRTY.add(c);else RBQ.add(c)}}
-  return kp}
+    if(kc){if(ISL)dropIslands(c,x0,x1,y0,y1,z0,z1,lobes[0][0]);else dropOrphans(c,x0,x1,y0,y1,z0,z1,n);if(DEFER)DIRTY.add(c);else RBQ.add(c)}}}
+function lobesList(mn,mx){return vchunks.filter(c=>!(PNT&&!c.paint)&&!(c.max.x<mn.x||c.min.x>mx.x||c.max.y<mn.y||c.min.y>mx.y||c.max.z<mn.z||c.min.z>mx.z))}
+function lobesApply(lobes,mn,mx,tun,n){
+  const st={lobes,mn,mx,tun,n,kp:[],v:new V3(),w:new V3(),seed:VR()*100};
+  for(const c of lobesList(mn,mx))lobesChunk(c,st);
+  return st.kp}
+function lobesJob(lobes,mn,mx,tun,n,done){ // fatias: captura VR/ISL/PNT desta chamada e os reinstala a cada fatia
+  const st={lobes,mn,mx,tun,n,kp:[],v:new V3(),w:new V3(),seed:VR()*100},list=lobesList(mn,mx),vr=VR,isl=ISL,pnt=PNT;let i=0;
+  const step=()=>{const sv=VR,si=ISL,sp=PNT;VR=vr;ISL=isl;PNT=pnt;const t0=performance.now();
+    try{while(i<list.length&&performance.now()-t0<5)lobesChunk(list[i++],st)}finally{VR=sv;ISL=si;PNT=sp}
+    if(i<list.length)requestAnimationFrame(step);else done(st.kp)};
+  step()}
 function carve(P0,d,n,cnt,graze){
   const k=Math.min(cnt,24),rr=graze?.02:.05+k*.006,tr=graze?0:.03,tl=graze?0:.04+Math.min(cnt,30)*.02,R=rr*4.2+.02;
   const lobes=[[P0.clone().addScaledVector(n,rr*.3),rr]],tA=new V3(Math.abs(n.y)<.9?0:1,Math.abs(n.y)<.9?1:0,0).cross(n).normalize(),tB=n.clone().cross(tA),nl=graze?0:(cnt>2?(VR()*3|0):0);
