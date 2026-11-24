@@ -19,3 +19,16 @@ input{-webkit-user-select:text;user-select:text}
 @media (max-height:340px) and (min-aspect-ratio:23/20){#ov{padding-top:6px;padding-bottom:6px}#ov h1{font-size:clamp(14px,min(4vw,8vh),30px)!important}#ov b{margin-top:6px;padding:6px 0;font-size:14px;letter-spacing:.3em}#ov #sub{margin-top:3px}#ov #lobby{margin-top:6px;padding-top:4px;gap:3px}#ov #lobby input,#ov #lobby button{padding:4px 8px;font-size:11px}#ov #helpbtn{margin-top:5px}}
 @media (max-width:360px){#ov h1{letter-spacing:.03em}#ov b{letter-spacing:.25em;padding-left:.25em}}
 #ov #lst,#ov #roster{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+
+/* ===== menu limpo: só título, INICIAR, MULTIPLAYER e OPÇÕES; sala sob demanda; sem HUD de câmera nem subtítulo ===== */
+body.menu #rec,body.menu #ts,body.menu #hr,body.menu #id,body.menu #feed,body.menu #bot,body.menu #roster{display:none!important}
+#ov #sub{display:none!important}
+#ov h1{margin-bottom:6px}
+#ov b{margin-top:30px;padding:16px 0;font-size:19px}
+#ov #lobby{border-top:0!important;margin-top:20px!important;padding-top:0!important;gap:10px!important}
+#ov #lobby #mpbtn,#ov #lobby #optbtn{display:block;width:auto;min-width:0;margin:0 auto;font:11px "Courier New",monospace;letter-spacing:.3em;color:var(--fg);opacity:.6;background:none;border:0;border-radius:0;padding:6px 4px;cursor:pointer;text-transform:none}
+#ov #lobby #mpbtn:hover,#ov #lobby #optbtn:hover,#ov #lobby #mpbtn:active,#ov #lobby #optbtn:active{opacity:1;background:none}
+#lobby.mp-off #nm,#lobby.mp-off .lr{display:none!important}
+#ov #lobby #optbtn{order:5}#ov #lobby #roomcode{order:3}#ov #lobby #lst{order:4}#ov #lobby #lstat{order:9}
+#ov #lstat{font-size:9px;letter-spacing:.2em;opacity:.35;margin-top:14px}
+@media (max-height:480px) and (min-aspect-ratio:23/20){#ov b{margin-top:12px;padding:9px 0;font-size:16px}#ov #lobby{margin-top:8px!important;gap:4px!important}#ov #lstat{margin-top:6px}}

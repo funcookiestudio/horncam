@@ -27,6 +27,8 @@ ov.addEventListener('click',e=>{
   addEventListener('keydown',e=>{if(e.code==='Escape')hs(false);});}
 document.addEventListener('pointerlockchange',()=>{
   if(document.pointerLockElement===canvas)unlockForResp=false;
+  // Esc (o navegador solta o mouse) durante a partida: abre o painel de opções, sem voltar à tela inicial; FECHAR recaptura o mouse
+  if(!isTouch&&document.pointerLockElement!==canvas&&!unlockForResp&&GS.mode==='play'&&active&&!(typeof PH!=='undefined'&&PH.dead)&&window.optOpen){window.optOpen(true);return}
   if(!isTouch&&document.pointerLockElement!==canvas&&!unlockForResp){introCancel();GS.mode='menu';ov.style.display='flex';active=false;}
 });
 document.addEventListener('pointerlockerror',()=>{if(unlockForResp&&!PH.dead){unlockForResp=false;introCancel();GS.mode='menu';ov.style.display='flex';active=false;}});

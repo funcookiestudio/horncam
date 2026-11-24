@@ -9,7 +9,7 @@ function netReset(){
   $('lr1').style.display=$('lr2').style.display='';$('roomcode').style.display='none';
 }
 function lobbyConnected(){
-  $('lr1').style.display=$('lr2').style.display='none';
+  $('lr1').style.display=$('lr2').style.display='none';$('lobby').classList.remove('mp-off');$('mpbtn').textContent='MULTIPLAYER ▴';
   const rc=$('roomcode');rc.style.display='block';rc.textContent=NET.code;
   rc.onclick=()=>{try{navigator.clipboard.writeText(NET.code);setStatus('Código copiado.');}catch(e){}};
   setStatus(NET.host?'Sala criada! Passe o código (toque para copiar) e clique em INICIAR.':'Conectado! Clique em INICIAR.');
@@ -78,3 +78,6 @@ $('joinroom').addEventListener('click',joinRoom);
 try{const sv=localStorage.getItem('horncam_name');if(sv)$('nm').value=sv;}catch(e){}
 addEventListener('pagehide',()=>{try{NET.peer&&NET.peer.destroy();}catch(e){}});
 
+
+// menu limpo: o bloco de sala só abre ao tocar em MULTIPLAYER (ou quando já conectado)
+{const mb=$('mpbtn'),lb=$('lobby');if(mb)mb.addEventListener('click',()=>{const off=lb.classList.toggle('mp-off');mb.textContent=off?'MULTIPLAYER ▾':'MULTIPLAYER ▴'})}

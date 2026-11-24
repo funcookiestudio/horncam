@@ -13,7 +13,9 @@
   function select(b){if(sel)sel.classList.remove('sel');sel=b;if(b)b.classList.add('sel');}
   function setEdit(on){editing=on;T.classList.toggle('editing',on);panel.style.display=on?'flex':'none';gear.style.display=on?'none':'flex';
     if(!on){select(null);drag=null;}else{input.sprint=false;W.trig=false;W.aim=false;}}
-  gear.addEventListener('pointerdown',e=>{e.preventDefault();setEdit(true);});
+  gear.addEventListener('pointerdown',e=>{e.preventDefault();if(window.optOpen)window.optOpen(false);}); // a engrenagem abre as OPÇÕES; de lá, EDITAR LAYOUT
+  {const er=document.getElementById('edrow'),eb=document.getElementById('opted');if(er)er.hidden=false;
+   if(eb)eb.addEventListener('click',()=>{if(window.optClose)window.optClose();setEdit(true)})}
   T.addEventListener('pointerdown',e=>{
     if(!editing)return;const b=e.target.closest('.btn');if(!b)return;
     e.stopPropagation();e.preventDefault();select(b);

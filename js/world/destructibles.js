@@ -44,7 +44,7 @@ function decFx(k,q,p,n,dir,cnt,s,quiet){
   if(k==='g'){const G=GLP.get(b);if(G)glassHit(G,pt,dd,s,quiet);return}
   if(b.door&&b.ch){const c=b.ch,T=Math.min(c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z),dn=dd.clone().normalize();   // ressalto do furo: do lado de saída da bala o metal se levanta
     (c.lips=c.lips||[]).push({x:pt.x,y:pt.y,z:pt.z,dx:dn.x,dy:dn.y,dz:dn.z,T});if(c.lips.length>16)c.lips.shift();c.warps=c.warps||[]}
-  voxFx(pt,nn,dd,cnt,b[6]+2,s,quiet);
+  voxFx(pt,nn,dd,cnt,b[6]+2,s,quiet,k==='s'&&!(b[4]<=.03&&b[1]<.2));
   if(!quiet&&k==='s'&&!(b[4]<=.03&&b[1]<.2)){const rf=dd.clone().addScaledVector(nn,2*Math.max(0,-dd.dot(nn)));for(let j=0;j<8;j++)deb1(pt,rf,'spark',.007,6,.5);tn(1600+Math.random()*1000,1000,.1,.06,'triangle')}}
 function decImpact(h,n,dir){
   const k=h.object.userData.decK,i=h.object.userData.decIdx[h.instanceId],E=DECK[k],b=E&&E.L[i];

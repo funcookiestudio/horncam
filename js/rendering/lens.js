@@ -33,9 +33,9 @@ function menuLens(dt,w,h){
   glareP.x=mlv.x*.5+.5;glareP.y=mlv.y*.5+.5;
   post.uniforms.glare.value=glareS;post.uniforms.lpos.value.set(glareP.x,glareP.y);
   const bloom=Math.min(1,.25+glareS*.9);
-  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,(.07+bloom*.4)*OPT.lensDirt);
+  lx.globalCompositeOperation='lighter';lx.globalAlpha=Math.min(1,(.07+bloom*.4)*OPT.lensDirt*.18);
   const k=Math.max(w,h)/512;if(OPT.lensDirt>.01)lx.drawImage(dirt,w/2-256*k,h/2-256*k,512*k,512*k);lx.globalAlpha=1;
-  flare({x:glareP.x*w,y:(1-glareP.y)*h,I:.6+glareS*.5},w,h,Math.min(w,h));
+  flare({x:glareP.x*w,y:(1-glareP.y)*h,I:(.6+glareS*.5)*.3},w,h,Math.min(w,h)); // menu limpo: sujeira e flare bem mais fracos
 }
 // Lente otimizada: mantém sujeira, flare e ofuscamento, mas limita raycasts caros.
 // As fontes são projetadas a cada quadro; a oclusão é atualizada em orçamento pequeno e escalonado.

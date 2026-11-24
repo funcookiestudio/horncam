@@ -107,7 +107,12 @@ const dcm=new THREE.MeshBasicMaterial({color:0x050505,transparent:true,opacity:.
 const spm=new THREE.MeshBasicMaterial({color:0xffb050}),spg=new THREE.BoxGeometry(.012,.012,.012);
 for(let i=0;i<140;i++){const m=new THREE.Mesh(spg,spm);m.visible=false;scene.add(m);sparks.push({m,v:new THREE.Vector3(),life:0});}
 var TRC=null,tri=0;
-function tracerInit(){const g=new THREE.BoxGeometry(.012,.012,1);g.translate(0,0,.5);const m0=new THREE.MeshBasicMaterial({color:0xffd9a0,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
+function tracerInit(){ // traçante realista: fita que sempre encara a câmera, afinada na cauda, cabeça quente e brilhante, brilho suave nas bordas
+  const g=new THREE.BufferGeometry(),pos=[],idx=[];for(let k=0;k<=8;k++){const z=k/8;pos.push(-.5,0,z,.5,0,z);if(k)idx.push(2*k-2,2*k-1,2*k,2*k-1,2*k+1,2*k)}
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);
+  const m0=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
+    vertexShader:'varying vec2 vu;void main(){vec4 mv=modelViewMatrix*vec4(0.,0.,position.z,1.);vec3 ax=normalize(mat3(modelViewMatrix)*vec3(0.,0.,1.));vec3 c=cross(ax,normalize(mv.xyz));float l=length(c);vec3 sd=l>.001?c/l:vec3(1.,0.,0.);float d=length(mv.xyz);float w=(.018+d*.0022)*mix(.25,1.,position.z);mv.xyz+=sd*position.x*w;vu=vec2(position.x+.5,position.z);gl_Position=projectionMatrix*mv;}',
+    fragmentShader:'varying vec2 vu;void main(){float e=1.-abs(vu.x-.5)*2.;float gl=e*e;float core=pow(e,5.);float a=pow(vu.y,2.4);vec3 col=mix(vec3(1.,.5,.16),vec3(1.,.93,.75),core)*(.5+a);gl_FragColor=vec4(col,(gl*.55+core*.9)*a);}'});
   TRC=[];for(let i=0;i<10;i++){const m=new THREE.Mesh(g,m0);m.visible=false;m.frustumCulled=false;scene.add(m);TRC.push({m,t:0,from:new V3(),to:new V3(),len:0})}}
 
 function tracer(end,from){if(!TRC)tracerInit();const t=TRC[tri++%TRC.length];if(from)t.from.copy(from);else fl.getWorldPosition(t.from);t.to.copy(end);t.len=t.from.distanceTo(end);if(t.len<.6)return;
@@ -159,6 +164,7 @@ function hit(){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02*SGSP;
 function propFx(pt,n){
   for(let i=0;i<22;i++){const s=sparks[sk++%sparks.length];s.m.position.copy(pt);s.v.set((Math.random()-.5)*4,Math.random()*3.2,(Math.random()-.5)*4).addScaledVector(n,R2(2,5));s.life=R2(.3,.55);s.m.visible=true;}
   for(let i=0;i<4;i++)deb1(pt,n,'spark',R2(.006,.012),R2(3,7),R2(.4,.8));
+  for(let i=0;i<3;i++)puff(pt.clone().add(new V3(R2(-.06,.06),R2(-.04,.08),R2(-.06,.06))),n,R2(.4,.8),0xdcdcd8,R2(1.2,2),.5,.12);
   sfx('imp');}
 // poeira no ar e feixe da lanterna
 const dgm=new THREE.BufferGeometry(),dpp=new Float32Array(900);for(let i=0;i<900;i++)dpp[i]=Math.random()*14;dgm.setAttribute('position',new THREE.BufferAttribute(dpp,3));

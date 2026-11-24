@@ -111,17 +111,21 @@ function fxVox(dt){
   for(let i=puffs.length-1;i>=0;i--){const q=puffs[i];q.t+=dt;const u=q.t/q.l;
     if(u>=1){scene.remove(q.s);q.s.material.dispose();puffs.splice(i,1);continue}
     q.s.scale.setScalar(q.sz*(.3+u*.9));q.s.material.opacity=q.op*(1-u);q.s.position.addScaledVector(q.v,dt)}}
-function voxFx(pt,n,dir,cnt,br,seed,quiet){
+// faíscas de metal: o clarão laranja do impacto (as mesmas partículas de propFx), mais densas que o pó
+function metalSparks(pt,n,k){for(let i=0;i<(isTouch?Math.ceil(k*.6):k);i++){const sp=sparks[sk++%sparks.length];sp.m.position.copy(pt);sp.v.set(R2(-1,1),R2(-.2,1.2),R2(-1,1)).multiplyScalar(3).addScaledVector(n,R2(2,6));sp.life=R2(.3,.65);sp.m.visible=true}}
+const SMOKE_W=0xdcdcd8; // fumaça padronizada: sempre branca/cinza-clara, qualquer que seja a cor do material atingido
+function voxFx(pt,n,dir,cnt,br,seed,quiet,metal){
   const cosA=-dir.dot(n);seedV(seed);
   if(cosA<.3){carve(pt,dir,n,1,true,n);unseedV();if(quiet)return;
-    const rf=dir.clone().addScaledVector(n,2*cosA);for(let i=0;i<4;i++)deb1(pt,rf,'spark',.006,6,.35);puff(pt,n,.25);nz(.05,.3,2500,1,3,.2);return}
+    const rf=dir.clone().addScaledVector(n,2*cosA);for(let i=0;i<4;i++)deb1(pt,rf,'spark',.006,6,.35);if(metal)metalSparks(pt,rf,10);puff(pt,n,.25,SMOKE_W);nz(.05,.3,2500,1,3,.2);return}
   const kp=carve(pt,dir,n,br===1?cnt*2+1:cnt,false);unseedV();
   if(quiet)return;
   kp.slice(0,Math.min(4+cnt,14)).forEach(q=>deb1(q,n,dbk(br),R2(.012,.03)*(1+Math.min(cnt,10)*.08),3,0));
   for(let i=0;i<3;i++)deb1(pt,n,'spark',.005,5,.35);
   {   for(let i=0;i<(isTouch?5:10);i++){const sp=sparks[sk++%sparks.length];sp.m.position.copy(pt);sp.v.set(R2(-1,1),R2(0,1),R2(-1,1)).multiplyScalar(2.2).addScaledVector(n,R2(2,5));sp.life=R2(.25,.5);sp.m.visible=true}}
   // poeira de concreto/tijolo: nuvem densa e demorada + fragmentos finos
-  {const dc=br>1?br-2:br?0x8c6a58:0x8d8e8a,k=1+Math.min(cnt,10)*.12;
+  if(metal)metalSparks(pt,n,18);
+  {const dc=SMOKE_W,k=1+Math.min(cnt,10)*.12;
    for(let i=0;i<5;i++)puff(pt.clone().add(new V3(R2(-.12,.12),R2(-.08,.14),R2(-.12,.12))),n,(.55+Math.min(cnt,10)*.07)*R2(.8,1.4),dc,R2(1.8,3),.6,.15);
    for(let i=0;i<Math.round(8*k);i++)deb1(pt,n,dbk(br),R2(.004,.01),R2(2,5),R2(.5,1.1));}
   nz(.09,.5,900,1,3,.3);tn(120,60,.06,.2)}
@@ -129,8 +133,9 @@ function voxImpact(h,n,dir){
   const c=hitChunk(h),cnt=dmgCount(h.point),br=c.dcode||(c.type==='brick'?1:0),seed=(Math.random()*1e9)|0,
     r3=v=>[+v.x.toFixed(3),+v.y.toFixed(3),+v.z.toFixed(3)],r4=v=>[+v.x.toFixed(4),+v.y.toFixed(4),+v.z.toFixed(4)],
     p=r3(h.point),nn=r4(n),dd=r4(dir);
-  voxFx(new V3(...p),new V3(...nn),new V3(...dd),cnt,br,seed,false);
-  NET.send({t:'vi',p,n:nn,d:dd,c:cnt,b:br,s:seed})}
+  const mt=(c.hard>=3||c.door||c.rb)?1:0;
+  voxFx(new V3(...p),new V3(...nn),new V3(...dd),cnt,br,seed,false,mt);
+  NET.send({t:'vi',p,n:nn,d:dd,c:cnt,b:br,s:seed,mt})}
 function blast(pt,R,n,seed,quiet){seedV(seed===undefined?(Math.random()*1e9)|0:seed);
   const RA=R*1.25,RP=R*3.7,vr=VR,bA=[new V3(pt.x-RA,pt.y-RA,pt.z-RA),new V3(pt.x+RA,pt.y+RA,pt.z+RA)],bP=[new V3(pt.x-RP,pt.y-RP,pt.z-RP),new V3(pt.x+RP,pt.y+RP,pt.z+RP)];
   const debP=kq=>kq.slice(0,40).forEach(q=>{const dr=q.clone().sub(pt);dr.divideScalar(dr.length()||1);dr.y+=.6;dr.normalize();deb1(q,dr,dbk(q.br),R2(.006,.016),R2(4,10),0)});

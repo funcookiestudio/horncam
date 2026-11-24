@@ -19,6 +19,13 @@ function spatialQuery(map,minX,maxX,minZ,maxZ){
   return found;
 }
 for(const b of solids)spatialInsert(spatialSolids,b,b.minX,b.maxX,b.minZ,b.maxZ);
+// A colisão consulta spatialSolids (índice espacial). Sólidos criados DEPOIS deste script (portas, portões, adereços de scenery-doors.js...) e as portas
+// que abrem/fecham mexem no array `solids`: push e splice agora mantêm o índice em dia (antes esses sólidos nunca entravam no índice e não colidiam).
+function spatialRemove(map,b){const x0=Math.floor(b.minX/SPATIAL_SIZE),x1=Math.floor(b.maxX/SPATIAL_SIZE),z0=Math.floor(b.minZ/SPATIAL_SIZE),z1=Math.floor(b.maxZ/SPATIAL_SIZE);
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const a=map.get(x+','+z);if(!a)continue;const i=a.indexOf(b);if(i>=0)a.splice(i,1)}}
+{const _push=solids.push,_splice=solids.splice;
+ solids.push=function(...a){for(const b of a)spatialInsert(spatialSolids,b,b.minX,b.maxX,b.minZ,b.maxZ);return _push.apply(this,a)};
+ solids.splice=function(i,n,...add){const rm=_splice.call(this,i,n);for(const b of rm)spatialRemove(spatialSolids,b);for(const b of add){spatialInsert(spatialSolids,b,b.minX,b.maxX,b.minZ,b.maxZ);_push.call(this,b)}return rm}}
 for(const c of vchunks)spatialInsert(spatialVoxels,c,c.min.x,c.max.x,c.min.z,c.max.z);
 const spatialStats={solidCells:spatialSolids.size,voxelCells:spatialVoxels.size,solidCandidates:0,voxelCandidates:0,raycasts:0,raycastObjects:0};
 function spatialRaycast(raycaster,objects,recursive=false){

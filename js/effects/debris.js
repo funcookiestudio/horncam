@@ -8,7 +8,7 @@ function deb1(pt,n,kind,size,spd,life){
   debs.push({m,kind,sz:size,life,t:0,rest:false,v:n.clone().multiplyScalar(spd*R2(.4,1)).add(new V3(R2(-1,1),R2(0,1.2),R2(-1,1)).multiplyScalar(spd*.5)),w:new V3(R2(-9,9),R2(-9,9),R2(-9,9))});
   if(debs.length>420)debs.shift()}
 function mkFxSprite(col,op,add){const o=new THREE.Object3D();o.material={opacity:op,color:new THREE.Color(col),add:!!add,dispose(){}};return o} // partícula leve: desenhada em lote por fxRender
-function puff(pt,n,sz,col,life,op,rise){if(puffs.length>120)return;op=op||.45;const s=mkFxSprite(col===undefined?0x6a6c6a:col,op,false);
+function puff(pt,n,sz,col,life,op,rise){if(puffs.length>260)return;op=op||.45;const s=mkFxSprite(col===undefined?0x6a6c6a:col,op,false);
   s.position.copy(pt).addScaledVector(n,.05);s.scale.setScalar(sz*.3);puffs.push({s,t:0,l:life||1.6,sz,op,v:n.clone().multiplyScalar(.4).add(new V3(R2(-.2,.2),R2(.1,.4)+(rise||0),R2(-.2,.2)))})}
 
 // ===== Desenho em lote do entulho e das partículas (antes: 1 draw call por pedaço/fumaça, até ~540 por quadro) =====

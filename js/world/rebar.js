@@ -89,7 +89,7 @@ function steelFx(pt,n,dir,quiet){
   bs.h=0;
   if(bs.k)bc.rb=bc.rb.filter(q=>q!==bs);else rbCut(bc,pt,.035);
   rbBuild(bc);
-  if(!quiet){for(let i=0;i<14;i++)deb1(pt,n,'spark',.009,8,.6);puff(pt,n,.3,0x555555,1,.4)}}
+  if(!quiet){for(let i=0;i<14;i++)deb1(pt,n,'spark',.009,8,.6);puff(pt,n,.3,0xdcdcd8,1,.4)}}
 function steelImpact(h,n,dir){
   const r3=v=>[+v.x.toFixed(3),+v.y.toFixed(3),+v.z.toFixed(3)],r4=v=>[+v.x.toFixed(4),+v.y.toFixed(4),+v.z.toFixed(4)],p=r3(h.point),nn=r4(n),dd=r4(dir);
   steelFx(new V3(...p),new V3(...nn),new V3(...dd),false);

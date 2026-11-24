@@ -2,7 +2,7 @@
 // ---------- Pré-aquecimento: compila shaders dos efeitos de tiro antes do 1º disparo ----------
 function warmup(){
   try{
-    const objs=[fl,mag2,sgPivot,sgShell,rvPivot,rvLoader,...(typeof DOORWARM!=='undefined'?DOORWARM:[]),...shells.map(q=>q.m),...decals,...sparks.map(q=>q.m)];
+    const objs=[fl,mag2,sgPivot,sgShell,rvPivot,rvLoader,...(typeof DOORWARM!=='undefined'?DOORWARM:[]),...((TRC||tracerInit(),TRC).map(t=>t.m)),...shells.map(q=>q.m),...decals,...sparks.map(q=>q.m)];
     const old=objs.map(o=>o.visible);
     objs.forEach(o=>o.visible=true);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:PT,color:0x6a6c6a,transparent:true,opacity:.45,depthWrite:false}));

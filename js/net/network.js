@@ -17,7 +17,7 @@ function handle(m){
   switch(m.t){
     case 'st':{const r=NET.rem[f];if(r)applyState(r,m);break;}
     case 'sh':{const r=NET.rem[f];if(!r)break;r.mzT=.06;SV=attn(r.cur.x,r.cur.z);sfx('shot');SV=1;break;}
-    case 'vi':{SV=attn(m.p[0],m.p[2]);voxFx(new V3(...m.p),new V3(...m.n),new V3(...m.d),m.c,m.b|0,m.s,false);SV=1;break;}
+    case 'vi':{SV=attn(m.p[0],m.p[2]);voxFx(new V3(...m.p),new V3(...m.n),new V3(...m.d),m.c,m.b|0,m.s,false,m.mt);SV=1;break;}
     case 'di':{SV=attn(m.p[0],m.p[2]);decFx(m.k,m.q,m.p,m.n,m.d,m.c,m.s,false);SV=1;break;}
     case 'sr':{SV=attn(m.p[0],m.p[2]);steelFx(new V3(...m.p),new V3(...m.n),new V3(...m.d),false);SV=1;break;}
     case 'dh':{const d=doors[m.i];if(d&&!d.broken){SV=attn(m.p[0],m.p[2]);const P_=new V3(...m.p),N_=new V3(...m.n);doorBullet(d,P_,N_,m.s);propFx(P_,N_);SV=1}break;}
@@ -66,7 +66,7 @@ function onInit(m,code){
   m.pl.forEach(p=>{NET.players[p.id]=p;});
   DEFER=true;
   for(const e of m.log){
-    if(e.t==='vi')voxFx(new V3(...e.p),new V3(...e.n),new V3(...e.d),e.c,e.b|0,e.s,true);
+    if(e.t==='vi')voxFx(new V3(...e.p),new V3(...e.n),new V3(...e.d),e.c,e.b|0,e.s,true,e.mt);
     else if(e.t==='bl')blast(new V3(...e.p),e.r,new V3(...e.n),e.s,true);
     else if(e.t==='di')decFx(e.k,e.q,e.p,e.n,e.d,e.c,e.s,true);
     else if(e.t==='sr')steelFx(new V3(...e.p),new V3(...e.n),new V3(...e.d),true);
