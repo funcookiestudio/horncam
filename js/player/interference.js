@@ -13,13 +13,17 @@ function interfGhost(r,on){ // troca os materiais do avatar por silhueta escura 
     if(on){if(!o.userData.om){o.userData.om=o.material;o.material=INTERF.gm}}
     else if(o.userData.om){o.material=o.userData.om;delete o.userData.om}});
 }
-function interfStart(){
+function interfStart(fast,dur){ // fast: sem aviso, vai direto à piscada (ex.: explosão do quadro); dur: segundos desorientado
   if(INTERF.ph||typeof active==='undefined'||!active||PH.dead)return;
-  INTERF.ph=1;INTERF.t=0;INTERF.turned=false;
+  INTERF.C=dur||26;INTERF.turned=false;INTERF.t=0;
+  if(fast){INTERF.ph=2;return}
+  INTERF.ph=1;
   try{nz(.9,.28,2800,1,1.5,0,'bandpass');tn(90,45,1.2,.14,'sawtooth')}catch(e){}
 }
 function interfSpawnCopy(){ // sem colegas: uma cópia sua, parada, à frente (já na nova direção), olhando para você
   const sx=P.pos.x,sz=P.pos.z;let best=null,fb=null;
+  const bp=(typeof BLK!=='undefined'&&BLK.ph)?BRKW[BLK.wi]:null; // durante o apagão a cópia surge perto do quadro de disjuntores
+  if(bp){for(let i=0;i<30&&!best;i++){const x=bp.x+bp.nx*(3+Math.random()*3),z=bp.z+(Math.random()-.5)*5;let ok=true;for(const b of solids){if(x>b.minX-.6&&x<b.maxX+.6&&z>b.minZ-.6&&z<b.maxZ+.6){ok=false;break}}if(ok)best={x,z}}}
   for(let i=0;i<60&&!best;i++){const a=P.yaw+(Math.random()-.5)*1.2,d=(i<40?8:5)+Math.random()*5,x=sx-Math.sin(a)*d,z=sz-Math.cos(a)*d;
     if(!fb)fb={x,z};
     let ok=true;for(const b of solids){if(x>b.minX-.6&&x<b.maxX+.6&&z>b.minZ-.6&&z<b.maxZ+.6){ok=false;break}}
@@ -65,7 +69,8 @@ function interfTick(dt){
     if(INTERF.t>=INTERF.D)interfEnd();
   }
   if(INTERF.ph>=2&&INTERF.ph<=3&&INTERF.turned){ // vultos tremem e falham; quando você olha direto para um, ele some
-    const fl=Math.random()<.93,fw=camera.getWorldDirection(INTERF.v),cp=camera.position;let sMax=0;
+    // durante o apagão os vultos só aparecem nos instantes em que a luz está forte: lampejos entre as piscadas
+    const lit=!(typeof BLK!=='undefined'&&BLK.ph>=2&&BLK.ph<=5)||BLK.mx>.55,fl=Math.random()<.93&&lit,fw=camera.getWorldDirection(INTERF.v),cp=camera.position;let sMax=0;
     const eat=r=>{if(!r||!r.ghost||!r.has||r.dead)return false;
       if(r.hideT>0){r.hideT-=dt;r.g.visible=false;if(r.hideT<=0&&r===INTERF.copy)interfMoveCopy(r);return true}
       const dx=r.cur.x-cp.x,dz=r.cur.z-cp.z,d=Math.hypot(dx,dz)||1e-3,g=(fw.x*dx+fw.z*dz)/(d*Math.hypot(fw.x,fw.z)||1),prox=Math.max(0,1-d/12);
@@ -78,7 +83,7 @@ function interfTick(dt){
     if(INTERF.sa<=0){INTERF.sa=.5+Math.random()*.35;
       const stp=r=>{if(!r||!r.ghost||!r.has||r.dead)return;if(r.spd<.8)return;
         const x=r.cur.x,z=r.cur.z;if(Math.hypot(x-cp.x,z-cp.z)>32)return;
-        sndAt({x,z},()=>{SV=attn(x,z)*1.15;sfx('step',.9);SV=1})};
+        sndAt({x,z},()=>{SV=attn(x,z)*1.15*((typeof BLK!=='undefined'&&BLK.ph>=4)?1.5:1);sfx('step',.9);SV=1})};
       for(const id in NET.rem)stp(NET.rem[id]);stp(INTERF.copy)}
     if(INTERF.copy){const r=INTERF.copy;animRemote(r,dt);const hid=eat(r);if(!hid&&Math.random()<.04)r.g.visible=false;if(!r.g.parent)scene.add(r.g);
       // a cópia só anda quando você NÃO está olhando para ela: vem devagar na sua direção e para a uns 3,5 m

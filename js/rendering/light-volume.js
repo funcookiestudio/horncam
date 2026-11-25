@@ -152,9 +152,10 @@ function lvUpload(){
   LVU.org.value.set(LV.x0,LV.y0,LV.z0);LVU.size.value.set(LV.nx*LV.cs,LV.ny*LV.cs,LV.nz*LV.cs);LVU.cs.value=LV.cs;LVU.gain.value=LV.gain;LVU.on.value=1}
 // ---- animação dos multiplicadores (todo quadro, custo desprezível) ----
 function lvDyn(){
-  const m=LVU.mul.value;m.x=1;m.y=0;m.z=0;
+  const bk=typeof BLK!=='undefined'&&BLK.ph?BLK:null;   // apagão: o brilho do ambiente segue as piscadas
+  const m=LVU.mul.value;m.x=bk&&LV.wi===bk.wi?bk.mx:1;m.y=0;m.z=0;
   for(let s=0;s<2;s++){const id=LV.badSlots[s];if(id<0)continue;const L=lamps[id],v=L.off?0:L.f*(L.su===undefined?1:L.su);if(s)m.z=v;else m.y=v}
-  const m2=LVU.mul2.value;m2.set(1,0,0,0);for(let s=0;s<2;s++){const id=LV.v2.badSlots[s];if(id<0)continue;const L=lamps[id],v=L.off?0:L.f*(L.su===undefined?1:L.su);if(s)m2.z=v;else m2.y=v}
+  const m2=LVU.mul2.value;m2.set(bk&&LV.v2.wi===bk.wi?bk.mx:1,0,0,0);for(let s=0;s<2;s++){const id=LV.v2.badSlots[s];if(id<0)continue;const L=lamps[id],v=L.off?0:L.f*(L.su===undefined?1:L.su);if(s)m2.z=v;else m2.y=v}
   if(LV.trLamps){let s=0,n=0,done=true;for(const L of LV.trLamps){if(L.off)continue;n++;s+=(L.su===undefined?1:L.su);if(L.ont!==undefined&&L.ont<.9)done=false}
     m.w=n?s/n:0;if(done){lvFoldTr();lvUpload();m.w=0}}else m.w=0}
 // ---- detecção do que mudou ----

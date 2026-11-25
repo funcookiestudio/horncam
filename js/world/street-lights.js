@@ -18,8 +18,8 @@ const SLP=[],SLL=[],SLD=[],SLH=[],SLB=[]; // SLD: lâmpada quebrada; SLH: halos;
     const cp=camera.position,inside=typeof LREG!=='undefined'&&LREG.whAt(cp.x,cp.z)>=0;
     acc+=1/60;if(acc<.2)return;acc=0;
     const near=SLP.map((p,i)=>[(p.x-cp.x)**2+(p.z-cp.z)**2,i]).filter(a=>!SLD[a[1]]&&a[0]<55*55&&(!inside||a[0]>14*14)).sort((a,b)=>a[0]-b[0]).slice(0,4);
-    SLL.forEach((l,k)=>{const n=near[k];if(!n){l.intensity=0;return}
-      l.position.copy(SLP[n[1]]);l.intensity=inside?1.6:2.6});
+    SLL.forEach((l,k)=>{const n=near[k];if(!n){l.intensity=0;l.userData.b=0;return}
+      l.position.copy(SLP[n[1]]);l.userData.b=inside?1.6:2.6;l.intensity=l.userData.b});
   };loop();
 })();
 

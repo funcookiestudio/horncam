@@ -6,13 +6,13 @@ const debs=[],puffs=[],DG=new THREE.IcosahedronGeometry(1,0),
 function deb1(pt,n,kind,size,spd,life){
   const m=new THREE.Object3D();m.scale.set(size*R2(.6,1.2),size*R2(.5,1),size*R2(.6,1.2));m.position.copy(pt).addScaledVector(n,.03); // não vai para a cena: é desenhado pelos lotes instanciados (debRender)
   debs.push({m,kind,sz:size,life,t:0,rest:false,v:n.clone().multiplyScalar(spd*R2(.4,1)).add(new V3(R2(-1,1),R2(0,1.2),R2(-1,1)).multiplyScalar(spd*.5)),w:new V3(R2(-9,9),R2(-9,9),R2(-9,9))});
-  if(debs.length>420)debs.shift()}
+  if(debs.length>900)debs.shift()}
 function mkFxSprite(col,op,add){const o=new THREE.Object3D();o.material={opacity:op,color:new THREE.Color(col),add:!!add,dispose(){}};return o} // partícula leve: desenhada em lote por fxRender
 function puff(pt,n,sz,col,life,op,rise){if(puffs.length>260)return;op=op||.45;const s=mkFxSprite(col===undefined?0x6a6c6a:col,op,false);
   s.position.copy(pt).addScaledVector(n,.05);s.scale.setScalar(sz*.3);puffs.push({s,t:0,l:life||1.6,sz,op,v:n.clone().multiplyScalar(.4).add(new V3(R2(-.2,.2),R2(.1,.4)+(rise||0),R2(-.2,.2)))})}
 
 // ===== Desenho em lote do entulho e das partículas (antes: 1 draw call por pedaço/fumaça, até ~540 por quadro) =====
-const DPOOL={},DCAP=440,FXCAP=400;
+const DPOOL={},DCAP=900,FXCAP=400;
 function debPool(kind){let p=DPOOL[kind];if(p)return p;
   const im=new THREE.InstancedMesh(DG,DM[kind],DCAP);im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.frustumCulled=false;im.count=0;im.visible=false;scene.add(im);return DPOOL[kind]={im,n:0}}
 function mkFxGeo(){const g=new THREE.InstancedBufferGeometry(),b=new THREE.PlaneGeometry(1,1);

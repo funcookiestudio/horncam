@@ -17,28 +17,46 @@ const bhWr=new THREE.Vector3(.006,.002,.07),bhIQ=new THREE.Quaternion(),bhSL=new
 const bhTip=new THREE.Vector3(-.018*1.3,.006*1.3,-BH_FT*1.3),bhS=new THREE.Vector3(.44,-.42,.1),bhR=new THREE.Vector3(.5,-.7,-.1),
   bhT=new THREE.Vector3(),bhD=new THREE.Vector3(),bhP=new THREE.Vector3(),bhQ=new THREE.Quaternion(),bhM=new THREE.Matrix4(),
   bhUp=new THREE.Vector3(0,1,0),bhZ=new THREE.Vector3(0,0,1),bhRoll=new THREE.Quaternion().setFromAxisAngle(bhZ,-.6);
+const bhHeld=new THREE.Mesh(new THREE.BoxGeometry(.05,.024,.024),new THREE.MeshBasicMaterial({color:0xffc860}));bhHeld.position.set(-.018,.008,-.135);bhHeld.visible=false;BH.add(bhHeld);
+const bhPk=new THREE.Vector3(.32,-.36,-.4);   // bolso da camisa (peito, lado direito, no espaço da câmera)
+function bhHeldC(c){bhHeld.material.color.setHex(c);bhHeld.visible=true}
 let bhLast=null;
-W.bz=0;W.poke=0;W.pend=null;W.pdir=1;
+W.bz=0;W.poke=0;W.pend=null;W.pdir=1;W.lid=0;W.fx=null;
 const bhSS=(a,b,x)=>{x=Math.max(0,Math.min(1,(x-a)/(b-a)));return x*x*(3-2*x)};
 function breakerHandTick(dt){
-  const ok=brkNear&&!PH.dead&&!W.rl&&!(typeof grenadeLoading!=='undefined'&&grenadeLoading)&&WA.inspectT<0&&WA.switchT<0;
-  if(ok)bhLast=brkNear;
+  if(W.fx&&(PH.dead||W.fx.t>2.45)){W.fx=null;bhHeld.visible=false}
+  const ok=(brkNear||W.fx)&&!PH.dead&&!W.rl&&!(typeof grenadeLoading!=='undefined'&&grenadeLoading)&&WA.inspectT<0&&WA.switchT<0;
+  if(ok)bhLast=W.fx?W.fx.bk:brkNear;
   W.bz+=((ok?1:0)-W.bz)*(1-Math.exp(-dt*(ok?7:6)));if(W.bz<.002&&!ok)W.bz=0;
   W.poke=Math.max(0,W.poke-dt/.55);
-  if(W.pend&&W.poke<=.55){const q=W.pend;W.pend=null;breakerDoToggle(q.wi,q.ci);} // meio do gesto: a chave troca
+  if(W.pend&&W.poke<=.55){const q=W.pend;W.pend=null;if(q.lid)fbDoorAct(q.bk);else breakerDoToggle(q.wi,q.ci);} // meio do gesto: a chave troca
   const on=W.bz>.03&&bhLast;BH.visible=!!on;rh.visible=W.bz<.5;if(!on)return;
   const b=bhLast.b,i=bhLast.i,z=b.z+b.zs*(i-3.5)*BK_PITCH;
   camera.updateMatrixWorld(true);
-  bhT.set(b.x+b.nx*.075,1.47,z);camera.worldToLocal(bhT);                // alavanca da chave, no espaço da câmera
+  if(W.fx)bhT.set(b.x+b.nx*.1,1.335,b.z+(W.fx.j-1.5)*.125);else if(bhLast.door)bhT.set(b.x+b.nx*.11,1.31,z);else bhT.set(b.x+b.nx*.075,1.47,z);camera.worldToLocal(bhT);                // alavanca da chave, no espaço da câmera
   bhD.copy(bhT).sub(bhS);const L=bhD.length();bhD.multiplyScalar(1/L);
   const extra=Math.min(.3,Math.max(0,L-BH_REACH));                         // quanto falta para tocar a chave
   if(L>BH_REACH)bhT.copy(bhS).addScaledVector(bhD,BH_REACH);               // o braço tem alcance limitado
   bhM.lookAt(bhP.set(0,0,0),bhD,bhUp);bhQ.setFromRotationMatrix(bhM).multiply(bhRoll); // -z da mão aponta para a chave, palma de lado
   bhP.copy(bhT).sub(bhTip.clone().applyQuaternion(bhQ));
+  if(W.fx){ // TROCAR FUSÍVEL: puxa o queimado -> larga -> pega um novo no bolso da camisa -> encaixa
+    const f=W.fx,t=f.t+=dt,k=bhSS(.72,1.12,t)-bhSS(1.5,1.9,t);
+    if(!f.a&&t>.58){f.a=1;fbSet(f.bk.b.wi,f.j,-1,true);bhHeldC(0x000000);try{sndAt({x:b.x,z:b.z},()=>{nz(.03,.4,2600,2,1,.08,'bandpass')})}catch(e){}}
+    if(!f.b&&t>1.05){f.b=1;bhHeld.visible=false;try{nz(.03,.3,900,1,2,.1)}catch(e){}}
+    if(!f.c&&t>1.38){f.c=1;bhHeldC(0xffc860);FSP.have--;FSP.hud();try{nz(.04,.25,1500,1,3,.08)}catch(e){}}
+    if(!f.d&&t>2.02){f.d=1;bhHeld.visible=false;fbInsertDone(f.bk,f.j)}
+    const near=1-k,pull=bhSS(.42,.58,t)*(1-bhSS(.6,.72,t)),ins=bhSS(1.88,2.0,t)*(1-bhSS(2.02,2.14,t));
+    bhP.addScaledVector(bhD,(.045+extra)*near*(bhSS(0,.3,t)));
+    bhP.addScaledVector(bhD,-.07*pull+.035*ins);
+    bhP.lerp(bhPk,k);
+    bhP.y+=Math.sin(t*9)*.004*k;
+  }
   if(W.poke>0){ // gesto: o dedo encosta na chave e sobe (liga) ou desce (desliga)
     const t=1-W.poke,env=bhSS(0,.25,t)*(1-bhSS(.78,1,t));
     bhP.addScaledVector(bhD,(.04+extra)*env);
-    bhP.y+=(W.pdir||1)*.075*(bhSS(.28,.62,t)-.5)*env*2*.5;
+    if(W.lid){ // tampa: a mão desce, vai para a ESQUERDA para abrir e para a DIREITA para fechar
+      bhP.y-=.035*env;bhP.x+=W.lid*.11*(bhSS(.2,.65,t)-.5)*env*2;
+    }else bhP.y+=(W.pdir||1)*.075*(bhSS(.28,.62,t)-.5)*env*2*.5;
   }
   const e=W.bz*W.bz*(3-2*W.bz);
   BH.position.copy(bhR).lerp(bhP,e);BH.quaternion.copy(bhQ);

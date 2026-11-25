@@ -3,7 +3,7 @@
 const NCOR=8,SW=WH.map(()=>{const lit=Math.random()<.55,a=Array.from({length:NCOR},()=>lit&&Math.random()<.3);if(lit&&!a.some(Boolean))a[Math.random()*NCOR|0]=true;return a}), // terror: ~45% dos galpões no escuro; nos demais, só ~30% dos corredores acesos (mín. 1)
   LW=WH.map(()=>Array.from({length:NCOR},()=>[])),BRKW={};
 lamps.forEach(L=>{if(L.wi!==undefined)LW[L.wi][L.cor].push(L)});
-function applyPower(wi,ci,init){const on=SW[wi][ci];
+function applyPower(wi,ci,init){const on=SW[wi][ci]&&(typeof fbOk!=='function'||fbOk(wi,ci));   // chave ligada E fusível do corredor bom (fuse-boxes.js)
   for(const L of LW[wi][ci]){L.off=L.dead||!on;if(on&&!L.dead)L.ont=init?9:-Math.random()*.55;else L.ont=-9}}  // ligar: partida escalonada com piscadas
 const BX_G=new THREE.BoxGeometry(1,1,1),NB=Math.max(1,BRK.length),
   brkBody=new THREE.InstancedMesh(BX_G,new THREE.MeshStandardMaterial({color:0x4b535a,roughness:.55,metalness:.5}),NB),
@@ -21,12 +21,15 @@ BRK.forEach((b,k)=>{b.k=k;BRKW[b.wi]=b;brkPlace(brkBody,k,b.x,1.5,b.z,.1,.5,.6);
 [brkBody,brkSlot,brkLev,brkLed].forEach(m=>{m.frustumCulled=false;scene.add(m)});hitMeshes.push(brkBody);
 for(let wi=0;wi<WH.length;wi++)for(let ci=0;ci<NCOR;ci++){applyPower(wi,ci,true);brkVis(wi,ci)}
 function setBreaker(wi,ci,v,quiet){if(!SW[wi]||SW[wi][ci]===undefined||SW[wi][ci]===v)return;SW[wi][ci]=v;applyPower(wi,ci,false);brkVis(wi,ci);
+  if(v&&!quiet&&typeof blkFlip==='function'&&!(typeof BLK!=='undefined'&&BLK.ph))blkFlip(wi,ci);   // janela instável do apagão (blackout.js)
   if(!quiet){try{tn(v?260:180,v?120:80,.14,.06,'square');nz(.06,.6,2500,1,3,.12);}catch(e){}}}
-function breakerDoToggle(wi,ci){const v=!SW[wi][ci];setBreaker(wi,ci,v,false);NET.send({t:'sw',w:wi,c:ci,v:v?1:0})}
+let BK_LOCAL=false; // true enquanto é ESTE jogador virando a chave (o dano do quadro só vale para quem mexeu)
+function breakerDoToggle(wi,ci){const v=!SW[wi][ci];BK_LOCAL=true;try{setBreaker(wi,ci,v,false)}finally{BK_LOCAL=false}NET.send({t:'sw',w:wi,c:ci,v:v?1:0})}
 // com a mão do painel visível: o dedo faz um movimento leve para CIMA (liga) ou para BAIXO (desliga) e a chave troca no meio do gesto
 function toggleBreaker(wi,ci){
   if(W.pend)return;
-  if(W.bz>.5){W.pend={wi,ci};W.pdir=SW[wi][ci]?-1:1;W.poke=1;return}
+  if(typeof blkBurned==='function'&&blkBurned(wi)){blkDry(wi,ci);return}   // quadro queimado: não responde
+  if(W.bz>.5){W.lid=0;W.pend={wi,ci};W.pdir=SW[wi][ci]?-1:1;W.poke=1;return}
   breakerDoToggle(wi,ci)}
 let brkUse=null,brkNear=null; // brkNear: painel de frente a menos de BH_NEAR m (usa a pose de mão estendida)
 // qual chave está sob a mira: interseção do raio da câmera com o plano frontal do quadro
@@ -36,7 +39,7 @@ function breakerTarget(){if(PH.dead||!BRK.length)return null;const cp=camera.pos
     const px=b.x+b.nx*.05,t=(px-cp.x)/vf.x;if(t<0||t>3.4)continue;
     const hy=cp.y+vf.y*t,hz=cp.z+vf.z*t;if(hy<1.15||hy>1.85)continue;
     const u=(hz-b.z)*b.zs/BK_PITCH+3.5;if(u<-.7||u>NCOR-.3)continue;
-    const i=Math.max(0,Math.min(NCOR-1,Math.round(u)));if(!best||t<best.dist)best={b,i,dist:t}}
+    const i=Math.max(0,Math.min(NCOR-1,Math.round(u)));if(!best||t<best.dist)best={b,i,dist:t,door:hy<1.41,hz}}   // porção de baixo do quadro = tampa da caixa de fusíveis (fuse-boxes.js)
   return best}
 // lâmpada piscando solta faísca (só perto do jogador, e nem todo apagão)
 function lampSpark(L){const dx=L.pos.x-camera.position.x,dz=L.pos.z-camera.position.z;if(dx*dx+dz*dz>26*26||Math.random()<.45)return;
@@ -63,6 +66,7 @@ function lampTick(dt){
       L.f+=(target-L.f)*(1-Math.exp(-dt*(L.glitchPhase===0?7:38)));
       f=Math.max(0,Math.min(1.4,L.f));col=f*su;
     }else{L.f=f;}
+    if(L.fxm!==undefined)col*=L.fxm;   // apagão/interferência: padrão de piscada por lâmpada (blackout.js)
     if(Math.abs(col-L.col)>.004){L.col=col;L.p.material.color.r=col;lampIM.setColorAt(L.id,LAMP_TMP.setScalar(col));dirty=true}
   }
   if(dirty)lampIM.instanceColor.needsUpdate=true;

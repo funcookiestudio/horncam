@@ -23,6 +23,11 @@ function handle(m){
     case 'dh':{const d=doors[m.i];if(d&&!d.broken){SV=attn(m.p[0],m.p[2]);const P_=new V3(...m.p),N_=new V3(...m.n);doorBullet(d,P_,N_,m.s);propFx(P_,N_);SV=1}break;}
     case 'pi':{SV=attn(m.p[0],m.p[2]);propFx(new V3(...m.p),new V3(...m.n));SV=1;break;}
     case 'bl':{NET.lastBy=f;SV=Math.min(1,attn(m.p[0],m.p[2])*3);blast(new V3(...m.p),m.r,new V3(...m.n),m.s,false);SV=1;break;}
+    case 'fb':if(typeof fbSet==='function')fbSet(m.w,m.j,m.s,false);break;
+    case 'fzq':{if(NET.host&&typeof fuseTake==='function'){const f=FSP.items[m.i];if(f&&!f.got){fuseTake(m.i,true,m.f);NET.send({t:'fz',i:m.i,w:m.f})}}break;}   // anfitrião decide quem pega
+    case 'fz':{if(typeof fuseTake==='function')fuseTake(m.i,true,m.w);break;}
+    case 'fr':{if(typeof fuseRespawn==='function')fuseRespawn(m.i);break;}
+    case 'blk':{if(typeof blkStart!=='undefined')blkStart(m.wi,m.seed,true);break;}
     case 'sl':{if(typeof breakStreetLamp!=='undefined')breakStreetLamp(m.i,false);break;}
     case 'lp':{const L=lamps[m.i];if(L){SV=attn(L.p.position.x,L.p.position.z);breakLamp(m.i,false);SV=1;}break;}
     case 'sw':{const b=BRKW[m.w];if(b){SV=attn(b.x,b.z);setBreaker(m.w,m.c,!!m.v,false);SV=1}break;}
@@ -47,7 +52,7 @@ function onConnData(conn,m){
     if(s>=MAXP){try{conn.send({t:'full'});}catch(e){}setTimeout(()=>{try{conn.close();}catch(e){}},400);return;}
     const p={id:conn.peer,n:sanitize(m.n),s,k:0,d:0};
     NET.players[p.id]=p;NET.conns[p.id]=conn;
-    try{conn.send({t:'init',you:s,pl:Object.values(NET.players),log:NET.log,dr:doors.map(d=>d.open?1:0),lm:lamps.map(L=>L.dead?1:0),sw:SW.map(a=>a.map(v=>v?1:0)),ab:ABX.map(b=>Math.ceil(abLeft(b)))});}catch(e){}
+    try{conn.send({t:'init',you:s,pl:Object.values(NET.players),log:NET.log,dr:doors.map(d=>d.open?1:0),lm:lamps.map(L=>L.dead?1:0),sw:SW.map(a=>a.map(v=>v?1:0)),ab:ABX.map(b=>Math.ceil(abLeft(b))),fu:typeof FSP!=='undefined'?FSP.items.map(f=>f.got?1:0):[],fb:typeof FBX!=='undefined'?Object.keys(FBX.fz).map(k=>[+k,FBX.fz[k].slice()]):[]});}catch(e){}
     for(const id in NET.conns)if(id!==p.id)try{NET.conns[id].send({t:'join',p});}catch(e){}
     addRemote(p);feed(p.n+' entrou');refreshUI();return;
   }
@@ -77,6 +82,8 @@ function onInit(m,code){
   (m.sw||[]).forEach((a,wi)=>a.forEach((v,ci)=>setBreaker(wi,ci,!!v,true)));
   (m.lm||[]).forEach((o,i)=>{if(o)breakLamp(i,true);});
   (m.ab||[]).forEach((c,i)=>{if(c>0)abOpen(i,false,c,true);});
+  (m.fu||[]).forEach((g,i)=>{if(g&&typeof fuseTake==='function')fuseTake(i,true,-1)});
+  (m.fb||[]).forEach(e=>e[1].forEach((st,j)=>{if(typeof fbSet==='function')fbSet(e[0],j,st,true)}));
   m.pl.forEach(p=>addRemote(p));
   spawnAt(SPAWNS[NET.slot%SPAWNS.length]);
   lobbyConnected();
