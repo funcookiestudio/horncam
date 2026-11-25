@@ -146,8 +146,8 @@ function exitPoint(p,d,bd){let t=1e9;
   for(const ax of ['x','y','z']){const v=d[ax];if(Math.abs(v)<1e-6)continue;const tt=((v>0?bd.mx[ax]:bd.mn[ax])-p[ax])/v;if(tt>0&&tt<t)t=tt}
   return p.clone().addScaledVector(d,Math.min(t,3))}
 var SGSP=1; // multiplicador de dispersão (chumbos da espingarda)
-function hit(){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02*SGSP;
-  rc.setFromCamera({x:(Math.random()-.5)*spr,y:(Math.random()-.5)*spr},camera);
+function hit(ox,oy){camera.updateMatrixWorld(true);const spr=(1-W.ads*.7)*.02*SGSP;
+  rc.setFromCamera(ox===undefined?{x:(Math.random()-.5)*spr,y:(Math.random()-.5)*spr}:{x:ox,y:oy},camera);
   const dir=rc.ray.direction.clone();
   let h=spatialRaycast(rc,hitMeshes.concat(decorHit),false)[0];tracer(h?h.point:rc.ray.at(60,new V3()));
   for(let depth=0;h;depth++){

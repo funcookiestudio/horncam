@@ -58,7 +58,9 @@ shoot=function(){
   W.mag--;W.cd=.85;W.rk+=.07;W.rz+=.1;W.fl=.07;W.bs++;
   P.pitch=Math.min(1.45,P.pitch+.034);P.yaw+=(Math.random()-.5)*.01;
   sfxSG();updAmmo();NET.send({t:'sh'});
-  SGSP=5;for(let i=0;i<9;i++)hit();SGSP=1;   // 9 chumbos, cada um com seu desvio
+  // 9 chumbos em leque: 1 central + 8 em anel (ângulo e raio com sorteio), círculo de ~6° (metade com mira); cada um fura/destrói separado
+  {const R=.17*(1-W.ads*.45),asp=innerHeight/innerWidth,a0=Math.random()*6.283;
+    for(let i=0;i<9;i++){if(i===0){hit(0,0);continue}const a=a0+(i-1)/8*6.283+(Math.random()-.5)*.5,r=R*(.45+.55*Math.random());hit(Math.cos(a)*r*asp,Math.sin(a)*r)}}
   SG.pw=.2;SG.pumped=0};                      // a bombeada começa logo após o coice
 reload=function(){
   if(!SG.on)return _sg0.reload();
