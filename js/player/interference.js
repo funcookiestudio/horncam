@@ -4,7 +4,7 @@
 // Só visual e só no jogador afetado: durante o efeito os colegas aparecem como VULTOS (silhuetas escuras, sem passos e sem lanterna)
 // e, sozinho, aparece uma cópia sua parada à distância. O dano nos colegas continua REAL (fogo amigo).
 // Tecla J dispara o evento (teste). INTERF.auto liga o sorteio (desligado no piloto).
-const INTERF={ph:0,t:0,turned:false,auto:false,next:0,copy:null,gm:null,v:new THREE.Vector3(),st:0,sa:0,A:1.6,B:.55,C:26,D:.55,key:'KeyJ'};
+const INTERF={ph:0,t:0,turned:false,auto:true,next:0,copy:null,gm:null,v:new THREE.Vector3(),st:0,sa:0,A:1.6,B:.55,C:26,D:.55,key:'KeyJ'};
 // silhueta fantasmagórica: preta, sem neblina; só dá para ver contra o que está iluminado
 INTERF.gm=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.94,depthWrite:false,fog:false});
 function interfGhost(r,on){ // troca os materiais do avatar por silhueta escura (e restaura)
@@ -42,11 +42,11 @@ function interfEnd(){
   for(const id in NET.rem)interfGhost(NET.rem[id],false);
   if(INTERF.copy){scene.remove(INTERF.copy.g);INTERF.copy=null}
   INTERF.ph=0;INTERF.st=0;nosigEl.style.display='none';
-  INTERF.next=performance.now()+(4+Math.random()*3)*60e3;
+  INTERF.next=performance.now()+(6+Math.random()*4)*60e3;
 }
 function interfTick(dt){
   const now=performance.now();
-  if(INTERF.auto&&!INTERF.ph&&GS.mode==='play'&&active&&!PH.dead){if(!INTERF.next)INTERF.next=now+(4+Math.random()*3)*60e3;if(now>INTERF.next)interfStart()}
+  if(INTERF.auto&&!INTERF.ph&&GS.mode==='play'&&active&&!PH.dead&&!(typeof BLK!=='undefined'&&BLK.ph)){if(!INTERF.next)INTERF.next=now+(6+Math.random()*4)*60e3;if(now>INTERF.next)interfStart()}
   if(!INTERF.ph)return;
   if(GS.mode!=='play'||!active||PH.dead){interfEnd();return}
   INTERF.t+=dt;const u=post.uniforms;
@@ -79,6 +79,11 @@ function interfTick(dt){
       sMax=Math.max(sMax,prox*prox*(.25+.75*Math.pow(Math.max(0,g),3)));r.g.visible=fl;return false};
     for(const id in NET.rem)eat(NET.rem[id]);
     // passos vindos da posição do vulto (mesmo escondido): o jogador procura a direção do som
+    INTERF.vo=(INTERF.vo===undefined?4:INTERF.vo)-dt;   // o vulto/cópia "fala" com um trecho da voz de um jogador, vindo da posição dele
+    if(INTERF.vo<=0&&typeof VOICE!=='undefined'&&VOICE.mimic){INTERF.vo=7+Math.random()*8;
+      const src=[];for(const id in NET.rem){const r=NET.rem[id];if(r&&r.ghost&&r.has&&!r.dead)src.push({id,r})}
+      if(INTERF.copy)src.push({id:null,r:INTERF.copy});
+      if(src.length){const q=src[Math.floor(Math.random()*src.length)];VOICE.mimic(q.id,q.r.cur.x,q.r.cur.z)}}
     INTERF.sa-=dt;
     if(INTERF.sa<=0){INTERF.sa=.5+Math.random()*.35;
       const stp=r=>{if(!r||!r.ghost||!r.has||r.dead)return;if(r.spd<.8)return;

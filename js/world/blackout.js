@@ -109,6 +109,14 @@ function blkTick(dt){
   if(typeof SLL!=='undefined')for(const l of SLL)if(l.userData.b!==undefined)l.intensity=l.userData.b*BLK.sm;
   if(typeof SLH!=='undefined'&&SLH[0]&&SLH[0][0])SLH[0][0].material.opacity=.95*BLK.sm;
 }
+// disparo automático: o anfitrião (ou o jogo solo) sorteia um apagão a cada 8-14 min (o primeiro em 4-6 min); não durante interferência, nem num quadro destruído
+BLK.auto=true;BLK.next=0;
+function blkAutoTick(now){
+  if(!BLK.auto||BLK.ph||GS.mode!=='play'||PH.dead||(NET.on&&!NET.host)){if(BLK.ph||GS.mode!=='play')BLK.next=BLK.next?BLK.next:0;return}
+  if(!BLK.next){BLK.next=now+(4+Math.random()*2)*60e3;return}
+  if(now<BLK.next)return;
+  const wi=blkPick();if(wi<0||blkBurned(wi)||(typeof INTERF!=='undefined'&&INTERF.ph)){BLK.next=now+30e3;return}
+  blkStart(wi,(Math.random()*1e9)|0);BLK.next=now+(8+Math.random()*6)*60e3}
 (function loop(){requestAnimationFrame(loop);let last=loop.t||performance.now();const n=performance.now();loop.t=n;
-  try{if(typeof active!=='undefined'&&active){const dt=Math.min(.1,(n-last)/1000);blkTick(dt);blkWinTick(dt)}}catch(e){}})();
+  try{if(typeof active!=='undefined'&&active){const dt=Math.min(.1,(n-last)/1000);blkTick(dt);blkWinTick(dt);blkAutoTick(n)}}catch(e){}})();
 addEventListener('keydown',e=>{if(!e.repeat&&e.code===BLK.key&&typeof active!=='undefined'&&active&&!PH.dead)blkStart(blkPick(),(Math.random()*1e9)|0)});

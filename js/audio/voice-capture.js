@@ -102,6 +102,22 @@ const VOIP={calls:{},ch:{},bound:null,tm:0};
     const s=A.createBufferSource(),f=A.createBiquadFilter(),g=A.createGain();s.buffer=b;s.playbackRate.value=.86;f.type='lowpass';f.frequency.value=2600;g.gain.value=1.2;
     s.connect(f);f.connect(g);g.connect(typeof MB!=='undefined'&&MB?MB:A.destination);if(typeof RV!=='undefined'&&RV){const r=A.createGain();r.gain.value=.6;g.connect(r);r.connect(RV)}
     s.start();return true};
+  // a entidade fala: trecho de um jogador (id) ou, na falta, de qualquer um/do próprio, deformado, vindo de (x,z)
+  VOICE.mimic=function(id,x,z){
+    const A=ac();if(!A||typeof camera==='undefined')return false;
+    let pool=(id&&VOICE.bank[id]&&VOICE.bank[id].length)?VOICE.bank[id]:null;
+    if(!pool){pool=[];for(const k in VOICE.bank)pool.push(...VOICE.bank[k]);pool.push(...VOICE.clips)}
+    if(!pool.length)return false;
+    const c=pool[Math.floor(Math.random()*pool.length)],a0=Math.random()<.5?0:Math.floor(c.length*Math.random()*.4),seg=c.subarray(a0,a0+Math.max(4000,Math.floor((c.length-a0)*(.55+Math.random()*.45))));
+    const b=A.createBuffer(1,seg.length,VOICE.SR);b.copyToChannel(seg,0);
+    if(Math.random()<.25)b.getChannelData(0).reverse();   // às vezes ao contrário
+    const s=A.createBufferSource(),f=A.createBiquadFilter(),g=A.createGain(),pn=A.createStereoPanner();
+    s.buffer=b;s.playbackRate.value=.78+Math.random()*.16;f.type='lowpass';f.frequency.value=1800+Math.random()*1200;
+    const cp=camera.position,dx=x-cp.x,dz=z-cp.z,d=Math.hypot(dx,dz)||1e-3,fv=camera.getWorldDirection(new THREE.Vector3());
+    g.gain.value=Math.max(.05,Math.min(1.4,1.7/(1+d*.12)));pn.pan.value=Math.max(-.9,Math.min(.9,((-fv.z)*dx+fv.x*dz)/d));
+    s.connect(f);f.connect(g);g.connect(pn);pn.connect(typeof MB!=='undefined'&&MB?MB:A.destination);
+    if(typeof RV!=='undefined'&&RV){const r=A.createGain();r.gain.value=.9;g.connect(r);r.connect(RV)}
+    s.start();return true};
   btn.addEventListener('click',()=>{VOICE.on?stop():start()});
   if(pb)pb.addEventListener('click',()=>{if(!VOICE.play()){VOICE.err='Ainda não há trecho gravado: fale algo com o microfone ligado.';ui();setTimeout(()=>{VOICE.err='';ui()},2500)}});
   document.getElementById('optbtn').addEventListener('click',ui);
