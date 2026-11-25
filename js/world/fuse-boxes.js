@@ -66,7 +66,7 @@ function fbOpen(wi){return (FBX.tg[wi]||0)>.5}
     FSP.have--;FSP.hud();fbInsertDone(bk,j)};
   window.fbInsertDone=function(bk,j){const wi=bk.b.wi;
     let live=false;for(let ci=0;ci<NCOR;ci++)if(fbJ(wi,ci)===j&&SW[wi][ci])live=true;
-    fbSet(wi,j,1);feed('FUSÍVEL TROCADO');NET.send({t:'fb',w:wi,j,s:1});
+    fbSet(wi,j,1);feed('FUSÍVEL TROCADO');if(typeof sanAdd==='function')sanAdd(10);NET.send({t:'fb',w:wi,j,s:1});
     if(live&&!PH.dead){hurt(10);sparkShower(new THREE.Vector3(bk.b.x+bk.b.nx*.12,1.335,bk.b.z+(j-1.5)*.125),14);feed('CHOQUE! DESLIGUE A CHAVE ANTES DE TROCAR')}};
   let last=performance.now();
   (function loop(){requestAnimationFrame(loop);const n=performance.now(),dt=Math.min(.1,(n-last)/1000);last=n;

@@ -91,7 +91,7 @@ function abOpen(i,mine,cd,quiet){
   abSnd(b,mine);
   if(mine&&!PH.dead){const g=Math.min(AB_MAX,W.res+AB_GIVE)-W.res;const eg=3-blastAmmo;if(g>0)W.res+=g;if(eg>0)blastAmmo=3;if(g>0||eg>0){updAmmo();feed((g>0?'+'+g+' MUNIÇÃO':'')+(g>0&&eg>0?' · ':'')+(eg>0?' +'+eg+' CARGAS EXPLOSIVAS':'') );}}
 }
-function takeBox(i){
+function takeBox(i){if(typeof sanAdd==='function')sanAdd(3);
   const b=ABX[i];if(!b||PH.dead||abLeft(b)>0)return;
   if(W.res>=AB_MAX&&blastAmmo>=3){feed('RESERVAS CHEIAS');return;}
   if(!NET.on||NET.host){abOpen(i,true,AB_CD);NET.send({t:'ab',i,w:NET.id,c:AB_CD});} // solo/anfitrião decide na hora
@@ -113,7 +113,7 @@ function ammoHint(t){
   hint.textContent=txt;hint.style.display='block';useBtn.classList.toggle('show',act);
   abUse=act?t.i:-1;
 }
-function useAct(){if(typeof FSP!=='undefined'&&FSP.use>=0){fuseTake(FSP.use);return}if(abUse>=0){takeBox(abUse);return;}if(brkUse){if(brkUse.door){fbDoorUse(brkUse);return}toggleBreaker(brkUse.b.wi,brkUse.i);return;}useDoor();}
+function useAct(){if(typeof PIL!=='undefined'&&PIL.use>=0){pillTake(PIL.use);return}if(typeof FSP!=='undefined'&&FSP.use>=0){fuseTake(FSP.use);return}if(abUse>=0){takeBox(abUse);return;}if(brkUse){if(brkUse.door){fbDoorUse(brkUse);return}toggleBreaker(brkUse.b.wi,brkUse.i);return;}useDoor();}
 function ammoBoxTick(dt){
   const now=performance.now();
   for(const b of ABX){
@@ -133,11 +133,12 @@ function worldTick(dt){const k=1-Math.exp(-dt*4);
       else if(d.mv){d.mv=false;d.a=tg;d.g.scale.y=Math.max(.04,1-d.a);sndAt({x:d.cx,z:d.cz},()=>gateStop(d.open))}
       if(d.open&&d.sOn&&d.a>.8){const i=solids.indexOf(d.sol);if(i>=0)solids.splice(i,1);d.sOn=false;}}
     else{d.a+=((d.open?1.75:0)-d.a)*k;d.g.rotation.y=d.sw*d.a;}}
-  abUse=-1;camera.getWorldDirection(vf);if(typeof FSP!=='undefined')FSP.use=-1;
+  abUse=-1;camera.getWorldDirection(vf);if(typeof FSP!=='undefined')FSP.use=-1;if(typeof PIL!=='undefined')PIL.use=-1;
   const d=nearDoor();let dd=1e9;
   if(d){const dx=d.cx-P.pos.x,dz=d.cz-P.pos.z,L=Math.hypot(dx,dz)||1;if((vf.x*dx+vf.z*dz)/L>.4)dd=L;}
   const bt=ammoTarget(),bk=breakerTarget();brkUse=null;brkNear=bk&&bk.dist<BH_NEAR&&(!bt||bk.dist<bt.dist)?bk:null;
   if(bk&&bk.dist<dd&&(!bt||bk.dist<bt.dist)){brkUse=bk;hint.textContent=(isTouch?'USE':'[G]')+' '+(bk.door?fbHint(bk):(SW[bk.b.wi][bk.i]?'DESLIGAR ':'LIGAR ')+(bk.i<7?'CORREDOR '+(bk.i+1):'ESCRITÓRIO'));hint.style.display='block';useBtn.classList.add('show');return}
+  const pt2=typeof pillTarget==='function'?pillTarget():null;if(pt2&&pt2.dist<dd&&(!bt||pt2.dist<bt.dist)&&(!bk||pt2.dist<bk.dist)){pillHint(pt2);brkUse=null;return;}
   const ft=typeof fuseTarget==='function'?fuseTarget():null;if(ft&&ft.dist<dd&&(!bt||ft.dist<bt.dist)&&(!bk||ft.dist<bk.dist)){fuseHint(ft);brkUse=null;return;}
   if(bt&&bt.dist<dd){ammoHint(bt);return;}
   if(dd<1e9){hint.textContent=(isTouch?'USE':'[G]')+(d.open?' FECHAR ':' ABRIR ')+(d.gate?'PORTÃO':'PORTA DE EMERGÊNCIA');hint.style.display='block';useBtn.classList.add('show');return;}

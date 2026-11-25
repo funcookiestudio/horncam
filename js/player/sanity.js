@@ -5,7 +5,11 @@ const SAN={v:100,rate:0,lit:0,dead:false,out:false,fx:0};
 const eeg=document.getElementById('eeg'),ex2=eeg?eeg.getContext('2d'):null,eeW=eeg?eeg.width:0,eeH=eeg?eeg.height:0;
 let ecx2=0,ey2=eeH/2,eAcc=0,ePh=0,eNz=0,eGap=0,eSpk=0;
 // consumo/recuperação por segundo (valores de teste; ajustar jogando)
+// ritmo da queda (opção SANIDADE): 0 lenta (x0,6), 1 normal, 2 rápida (x1,6); só a perda muda, a recuperação é igual
+const SAN_M=[.6,1,1.6],SAN_N=['LENTA','NORMAL','RÁPIDA'];let sanMode=1;try{const q=+localStorage.getItem('horncam_san');if(q>=0&&q<=2)sanMode=q|0}catch(e){}
+{const b=document.getElementById('optsan');if(b){const ui=()=>{b.textContent=SAN_N[sanMode];b.classList.toggle('on',sanMode!==1)};ui();b.addEventListener('click',()=>{sanMode=(sanMode+1)%3;ui();try{localStorage.setItem('horncam_san',sanMode)}catch(e){}})}}
 const SAN_C={lit:.3,dim:.1,up:.4,dimD:.15,dimF:.06,darkD:.7,darkF:.3,outD:1,outF:.65,event:.5,ally:.3};
+function sanAdd(n){SAN.v=Math.max(0,Math.min(100,SAN.v+n))}   // alívio: trocar fusível +10, pegar munição +3
 function sanTick(dt){
   if(GS.mode==='menu'||typeof MENU_ON!=='undefined'&&MENU_ON){sanDraw(dt,60);sanClear();return}
   if(GS.mode!=='play'||typeof active==='undefined'||!active){sanDraw(dt,SAN.v);sanClear();return}
@@ -18,6 +22,7 @@ function sanTick(dt){
   else{SAN.lit=0;r=-(flashOn?SAN_C.outF:SAN_C.outD)}
   if((typeof BLK!=='undefined'&&BLK.ph>=2)||(typeof INTERF!=='undefined'&&INTERF.ph>=2&&INTERF.ph<=3))r-=SAN_C.event;
   if(r<0)for(const id in NET.rem){const q=NET.rem[id];if(q&&q.has&&!q.dead&&Math.hypot(q.cur.x-x,q.cur.z-z)<6){r+=SAN_C.ally;break}}
+  if(r<0)r*=SAN_M[sanMode];
   SAN.rate=r;SAN.v=Math.max(0,Math.min(100,SAN.v+r*dt));
   sanDraw(dt,SAN.v);sanFx(dt);
 }
@@ -55,9 +60,10 @@ function sanFx(dt){
   const v=SAN.v,k=Math.max(0,Math.min(1,(70-v)/70)),now=performance.now();
   // vinheta: cresce com a perda e "respira" com o batimento
   SFX.hb-=dt;const bpm=60+k*75;
-  if(v<70&&SFX.hb<=0){SFX.hb=60/bpm;SFX.fg=1;try{tn(58,38,.16,.07+k*.12,'sine');tn(52,34,.14,.04+k*.08,'sine',.2)}catch(e){}}
+  const cm=typeof PIL!=='undefined'&&PIL.calm>0?.35:1;
+  if(v<70&&SFX.hb<=0){SFX.hb=60/bpm;SFX.fg=1;try{tn(58,38,.16,(.07+k*.12)*cm,'sine');tn(52,34,.14,(.04+k*.08)*cm,'sine',.2)}catch(e){}}
   SFX.fg=Math.max(0,SFX.fg-dt*3);
-  SFX.vig.style.opacity=v<70?Math.min(1,k*.95+SFX.fg*.14*k):0;
+  SFX.vig.style.opacity=v<70?Math.min(1,(k*.95+SFX.fg*.14*k)*(cm<1?.5:1)):0;
   // vulto de relance na borda da tela (v<40): aparece, treme e some
   if(SFX.fig.style.opacity>0)SFX.fig.style.opacity=Math.max(0,SFX.fig.style.opacity-dt*2.8);
   if(v<40){
