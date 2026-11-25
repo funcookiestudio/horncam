@@ -95,6 +95,8 @@
     <p class="hint">Se o jogo ficar pesado, desligue REFLEXOS e SUJEIRA.</p>
     <h3 class="sec">JOGO</h3>
     <div class="row"><span>FPS</span><button id="optfps" type="button">DESLIGADO</button></div>
+    <div class="row"><span>VOZ</span><button id="optmic" type="button">DESLIGADO</button><button id="optmicp" type="button">OUVIR</button></div>
+    <p class="hint" id="optmich"></p>
     <div class="row" id="pwarow" hidden><span>APP</span><button id="optinstall" type="button">INSTALAR</button></div>
     <p class="hint" id="pwahint" hidden>iPhone/iPad: toque em Compartilhar › Adicionar à Tela de Início.</p>
     <div class="row" id="edrow" hidden><span>CONTROLES</span><button id="opted" type="button">EDITAR LAYOUT</button></div>
@@ -147,6 +149,7 @@
 <script src="js/rendering/bodycam-postfx.js"></script>
 <script src="js/player/player.js"></script>
 <script src="js/audio/sound-options.js"></script>
+<script src="js/audio/voice-capture.js"></script>
 <script src="js/ui/visual-options.js"></script>
 <script src="js/audio/horror-sound.js"></script>
 <script src="js/audio/menu-music.js"></script>
@@ -178,6 +181,7 @@
 <script src="js/audio/spatial.js"></script>
 <script src="js/effects/muzzle-smoke.js"></script>
 <script src="js/world/street-lights.js"></script>
+<script src="js/player/interference.js"></script>
 <script src="js/world/outdoor-fog.js"></script>
 <script src="js/world/moon.js"></script>
 <script src="js/pwa.js"></script>

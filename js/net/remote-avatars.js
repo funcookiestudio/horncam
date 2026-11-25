@@ -72,11 +72,11 @@ function animRemote(r,dt){
   r.ph+=r.spd*dt*2.2*alive;
   r.legs[0].rotation.x=Math.sin(r.ph)*.8*mv;r.legs[1].rotation.x=-Math.sin(r.ph)*.8*mv;
   const st=Math.floor(r.ph/Math.PI);
-  if(st!==r.st){r.st=st;if(r.spd>.8&&!r.crouch&&!r.dead&&r.cur.y<.05){SV=attn(r.cur.x,r.cur.z)*.7;sfx('step',.7);SV=1;}}
+  if(st!==r.st){r.st=st;if(r.spd>.8&&!r.crouch&&!r.dead&&!r.ghost&&r.cur.y<.05){SV=attn(r.cur.x,r.cur.z)*.7;sfx('step',.7);SV=1;}}
   r.bodyG.rotation.x=1.5*r.dz;r.bodyG.position.y=.15*r.dz;
   r.mzT-=dt;r.mz.visible=r.mzT>0&&!r.dead;r.mz.rotation.z=Math.random()*3;
-  r.bm.visible=r.lamp.visible=r.fl&&!r.dead;
-  r.tag.visible=!r.dead;
+  r.bm.visible=r.lamp.visible=r.fl&&!r.dead&&!r.ghost;
+  r.tag.visible=!r.dead&&!r.ghost;
   r.bp.scale.y=1-.31*r.cz;r.bp.position.y=.725*r.bp.scale.y;r.hp.position.y=1.6-.45*r.cz;
 }
 
