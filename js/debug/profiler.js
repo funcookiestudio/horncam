@@ -57,7 +57,7 @@ function tick(){
   const dt=Math.min(clock.getDelta(),.05); time+=dt;
   let t0=performance.now();if(active) update(dt);perfTimes.logic=performance.now()-t0;
   t0=performance.now();netTick(dt);perfTimes.network=performance.now()-t0;
-  t0=performance.now();fxVox(dt);rebuildTick();visFrame();progWatch();horrorTick(dt);if(active)lvTick(dt);fxRender();ammoBoxTick(dt);ecgTick(dt);perfTimes.effects=performance.now()-t0;
+  t0=performance.now();fxVox(dt);rebuildTick();visFrame();progWatch();horrorTick(dt);if(active)lvTick(dt);fxRender();ammoBoxTick(dt);ecgTick(dt);if(typeof sanTick==='function')sanTick(dt);perfTimes.effects=performance.now()-t0;
   t0=performance.now();expo(dt);{let on=0;for(const L of RL)if(!(L.off&&L.fz<=0))on++;AMB+=(on/RL.length-AMB)*(1-Math.exp(-dt*3));}
   hemi.intensity=(.04+.31*AMB)*EXPO; rim.intensity=(.15+.35*AMB)*EXPO;
   lampTick(dt);perfTimes.lighting=performance.now()-t0;
