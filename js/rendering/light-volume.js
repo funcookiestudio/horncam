@@ -94,7 +94,10 @@ function lvLampSlice(job,tEnd){
       const d=Math.sqrt(d2),f=Math.pow(1-d/R,1.6)*I;if(f<.004)continue;
       let vis=1;const steps=Math.floor((d-.2)/.2);
       if(steps>2){const sx=dx/d*.2,sy=dy/d*.2,sz=dz/d*.2;let qx=ex+sx*2,qy=ey+sy*2,qz=ez+sz*2;
-        for(let s=2;s<steps;s++,qx+=sx,qy+=sy,qz+=sz){if(solid(qx,qy,qz)){vis=0;break}}}
+        let hit=0;for(let s=2;s<steps;s++,qx+=sx,qy+=sy,qz+=sz){if(solid(qx,qy,qz)){hit=1;   // 1o sólido: olha só mais 3 amostras (custo limitado) para medir a espessura
+          for(let e=0;e<3&&s+1<steps;e++){s++;qx+=sx;qy+=sy;qz+=sz;if(solid(qx,qy,qz))hit++}
+          break}}
+        vis=hit>=3?0:hit===2?.3:hit===1?.6:1;} // 1 amostra só = vigas/lâmpadas/quinas finas: sombra parcial (sem borrão preto); 2+ = parede/coluna: bloqueia
       if(vis)out[c]+=f;
       if((c&255)===0&&performance.now()>tEnd){job.cell=c+1;return false}}
     job.cell=0;job.ii++}

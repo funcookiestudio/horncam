@@ -8,7 +8,7 @@ function fbOpen(wi){return (FBX.tg[wi]||0)>.5}
 (function(){
   if(!BRK.length)return;
   const NB=BRK.length,G=new THREE.BoxGeometry(1,1,1),IMs=(m,n)=>{const im=new THREE.InstancedMesh(G,m,n);im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.frustumCulled=false;scene.add(im);return im};
-  const inner=IMs(new THREE.MeshStandardMaterial({color:0x14171a,roughness:.9}),NB),door=IMs(new THREE.MeshStandardMaterial({color:0x7a828a,roughness:.5,metalness:.55}),NB),
+  const inner=IMs(new THREE.MeshStandardMaterial({color:0x3b4147,roughness:.55,metalness:.5}),NB),door=IMs(new THREE.MeshStandardMaterial({color:0x7a828a,roughness:.5,metalness:.55}),NB),
     handle=IMs(new THREE.MeshStandardMaterial({color:0xb8b8ae,roughness:.35,metalness:.8}),NB),glass=IMs(new THREE.MeshBasicMaterial({color:0xffffff}),NB*4),
     caps=IMs(new THREE.MeshStandardMaterial({color:0x9a9a92,roughness:.4,metalness:.8}),NB*8),wires=IMs(new THREE.MeshBasicMaterial({color:0xffffff}),NB*10);
   const O=new THREE.Object3D(),M=new THREE.Matrix4(),Ml=new THREE.Matrix4(),Q0=new THREE.Quaternion(),C=new THREE.Color(),Y=1.335,F_GOOD=0xffd070,F_BAD=0x000000;
@@ -22,7 +22,7 @@ function fbOpen(wi){return (FBX.tg[wi]||0)>.5}
     Ml.compose(new THREE.Vector3(b.nx*.012,0,.5),Q0,new THREE.Vector3(.014,.03,.014));M.multiplyMatrices(O.matrix,Ml);handle.setMatrixAt(b.k,M);
     door.instanceMatrix.needsUpdate=handle.instanceMatrix.needsUpdate=true}
   BRK.forEach(b=>{FBX.fz[b.wi]=[1,1,1,1];FBX.t[b.wi]=FBX.tg[wiKey(b)]=0;FBX.k[b.wi]=b;
-    pl(inner,b.k,b.x+b.nx*.052,Y,b.z,.01,.125,.54);
+    pl(inner,b.k,b.x+b.nx*.052,Y,b.z,.012,.19,.6);   // placa de fundo da caixa de fusíveis (cobre a área dos fusíveis e fios)
     for(let j=0;j<4;j++){const z=b.z+(j-1.5)*.125,x=b.x+b.nx*.07,i=b.k*8+j*2;
       pl(caps,i,x,Y+.043,z,.036,.012,.036);pl(caps,i+1,x,Y-.043,z,.036,.012,.036);
       const wi0=b.k*10+j*2;pl(wires,wi0,x,Y+.066,z,.006,.034,.006);wires.setColorAt(wi0,C.setHex(j%2?0xc01818:0xe8c020));

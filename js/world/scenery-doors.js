@@ -146,6 +146,6 @@ function useDoor(){const d=nearDoor();if(!d||d.broken)return;
   if(d.open){const s=d.sol;if(P.pos.x>s.minX-.6&&P.pos.x<s.maxX+.6&&P.pos.z>s.minZ-.6&&P.pos.z<s.maxZ+.6)return;} // não fecha em cima do jogador
   setDoor(d,!d.open);NET.send({t:'dr',i:doors.indexOf(d),o:d.open?1:0});}
 addEventListener('keydown',e=>{if(e.code==='KeyG')useAct();});
-const hint=document.createElement('div');hint.style.cssText='position:fixed;left:0;right:0;bottom:34%;text-align:center;font:bold 14px Courier New,monospace;letter-spacing:2px;color:#e8e8e8;text-shadow:0 0 3px #000,1px 1px 0 #000;pointer-events:none;z-index:4;display:none';document.body.appendChild(hint);
+const hint=document.createElement('div');hint.style.cssText='position:fixed;left:0;right:0;bottom:34%;text-align:center;font:bold 14px Courier New,monospace;letter-spacing:2px;color:#e8e8e8;text-shadow:0 0 2px #000,0 0 5px #000,0 0 10px #000,0 0 16px #000,1px 1px 0 #000;pointer-events:none;z-index:4;display:none';document.body.appendChild(hint);
 const useBtn=document.getElementById('btn-use');
 useBtn.addEventListener('pointerdown',e=>{e.preventDefault();useAct();});

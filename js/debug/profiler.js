@@ -50,8 +50,11 @@ function updateSpatialDiagnostics(dt){
     'Geometrias: '+info.memory.geometries+' | texturas: '+info.memory.textures+' | heap: '+mem;
 }
 const p2=n=>String(n).padStart(2,'0');
+// limite fixo de 60 quadros por segundo (PC e celular): acumula o tempo decorrido e só desenha quando completa 1/60 s (vale para 60, 90, 120, 144, 180 Hz...)
+const FPS_CAP=60,FT_CAP=1000/FPS_CAP;let capLast=performance.now(),capAcc=FT_CAP;
 function tick(){
   requestAnimationFrame(tick);
+  {const nc=performance.now();capAcc+=nc-capLast;capLast=nc;if(capAcc<FT_CAP*.92)return;capAcc-=FT_CAP;if(capAcc>FT_CAP)capAcc=0}
   if(VOX_DEFER)finalizeVox(); // 1º quadro: todo o mapa já foi gerado; agrupa chunks intactos em lotes instanciados
   const frameStart=performance.now();
   const dt=Math.min(clock.getDelta(),.05); time+=dt;
