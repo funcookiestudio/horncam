@@ -9,14 +9,16 @@ const LVU={
   on:{value:0},gain:{value:1},cs:{value:1},
   refl:{value:0},dirt:{value:0},   // reflexos no chão / sujeira procedural (opções do jogador; 0 = desligado e sem custo)
   tex2:{value:null},org2:{value:new THREE.Vector3()},size2:{value:new THREE.Vector3(1,1,1)},on2:{value:0},mul2:{value:new THREE.Vector4(1,0,0,0)}, // volume SECUNDÁRIO: o galpão visitado antes (visto por buracos/janelas)
+  texB:{value:null},texB2:{value:null},lm:{value:null},lmOrg:{value:new THREE.Vector2()},lmSize:{value:new THREE.Vector2(40,50)},lmOn:{value:0},bounce:{value:1}, // AO+rebote (3D), lightmap fino do piso (2D, mesmos 4 canais)
   mul:{value:new THREE.Vector4(1,0,0,0)}};   // pesos dos 4 canais (estável, defeito 1, defeito 2, partida)
 (function(){
   const dummy=new THREE.DataTexture3D(new Uint16Array(4),1,1,1);dummy.format=THREE.RGBAFormat;dummy.type=THREE.HalfFloatType;dummy.internalFormat='RGBA16F';
-  dummy.minFilter=dummy.magFilter=THREE.LinearFilter;dummy.unpackAlignment=1;dummy.needsUpdate=true;LVU.tex.value=dummy;LVU.tex2.value=dummy;LVU.dummy=dummy;
+  dummy.minFilter=dummy.magFilter=THREE.LinearFilter;dummy.unpackAlignment=1;dummy.needsUpdate=true;LVU.tex.value=dummy;LVU.tex2.value=dummy;LVU.texB.value=dummy;LVU.texB2.value=dummy;LVU.dummy=dummy;const d2=new THREE.DataTexture(new Uint16Array(4),1,1,THREE.RGBAFormat,THREE.HalfFloatType);d2.internalFormat='RGBA16F';d2.needsUpdate=true;LVU.lm.value=d2;LVU.dummy2=d2;
   const FRAG_DECL=`
 varying vec3 vLvP;
 precision highp sampler3D;
 uniform sampler3D lvTex;uniform vec3 lvOrg;uniform vec3 lvSize;uniform vec3 lvTint;uniform float lvOn;uniform float lvGain;uniform float lvCs;uniform vec4 lvMul;uniform float lvRefl;uniform float lvDirt;
+uniform sampler3D lvTexB;uniform sampler3D lvTexB2;uniform sampler2D lvLm;uniform vec2 lvLmOrg;uniform vec2 lvLmSize;uniform float lvLmOn;uniform float lvBounce;
 uniform sampler3D lvTex2;uniform vec3 lvOrg2;uniform vec3 lvSize2;uniform float lvOn2;uniform vec4 lvMul2;
 float lvH(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lvN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(lvH(i),lvH(i+vec2(1.,0.)),f.x),mix(lvH(i+vec2(0.,1.)),lvH(i+vec2(1.,1.)),f.x),f.y);}
@@ -36,6 +38,7 @@ vec3 lvGrime(vec3 col,vec3 p,vec3 n){
     col=mix(col,vec3(.24,.03,.022)*(.55+.9*lvN(p.xz*17.)),bm*.78+rim*.25);}   // sangue: miolo manchado, borda mais escura
   return col;}
 float lvT(vec3 p,bool s){vec3 u=s?(p-lvOrg2)/lvSize2:(p-lvOrg)/lvSize;vec3 t=vec3(u.x,u.z,u.y);return s?dot(textureLod(lvTex2,t,0.),lvMul2):dot(textureLod(lvTex,t,0.),lvMul);}
+vec2 lvB(vec3 p,bool s){vec3 u=s?(p-lvOrg2)/lvSize2:(p-lvOrg)/lvSize;vec3 t=vec3(u.x,u.z,u.y);return s?textureLod(lvTexB2,t,0.).rg:textureLod(lvTexB,t,0.).rg;}
 float lvMask(vec3 u){return smoothstep(0.,.05,min(min(u.x,1.-u.x),min(u.z,1.-u.z)))*smoothstep(1.,.93,u.y)*step(0.,u.y+.02);}
 `;
   const FRAG_USE=`
@@ -47,20 +50,25 @@ if(lvOn>0.){
     vec3 lwn=inverseTransformDirection(normal,viewMatrix);
     vec3 lsp=lvp+lwn*lvCs*.55;                                       // amostra no ar da sala, não dentro da célula da parede/chão (tira a faixa escura no pé)
     float lc=lvT(lsp,lvsec);
-    vec3 lg=vec3(lvT(lsp+vec3(lvCs,0.,0.),lvsec)-lc,lvT(lsp+vec3(0.,lvCs,0.),lvsec)-lc,lvT(lsp+vec3(0.,0.,lvCs),lvsec)-lc);
-    float lgl=length(lg);vec3 ld=lgl>1e-4?lg/lgl:lwn;
-    float lnl=mix(.04,1.,smoothstep(-.1,.68,dot(lwn,ld)));   // face de costas para a luz (lado de fora da parede) quase não recebe: sem vazamento pela parede
-    float lao=lwn.y>.5?1.:mix(.5,1.,smoothstep(0.,1.5,lvp.y))*mix(.72,1.,smoothstep(0.,1.2,6.4-lvp.y));   // contato: base e topo de paredes e colunas mais escuros
-    reflectedLight.directDiffuse+=lc*lvGain*lvm*lnl*lao*lvTint*material.diffuseColor;
+    vec2 lb=lvB(lsp,lvsec);                                          // x = oclusão ambiente, y = rebote difuso
+    float lfl=0.;
+    if(!lvsec&&lvLmOn>0.&&lwn.y>.9&&lvp.y<.3){vec2 luv=(lvp.xz-lvLmOrg)/lvLmSize;if(luv.x>0.&&luv.x<1.&&luv.y>0.&&luv.y<1.){lc=dot(texture2D(lvLm,luv),lvMul);lfl=1.;}}   // piso: luz direta do lightmap fino (sombras nítidas)
+    lc+=lb.y*lvBounce*lvMul.x;
+    float lnl=mix(.5,1.,lwn.y*.5+.5);                                // topo recebe um pouco mais que as laterais; nada fica totalmente preto
+    float lao=(lwn.y>.5?1.:mix(.5,1.,smoothstep(0.,1.5,lvp.y))*mix(.72,1.,smoothstep(0.,1.2,6.4-lvp.y)))*lb.x;   // contato + oclusão ambiente
+    vec3 ldc=material.diffuseColor;if(lfl>.5)ldc=mix(ldc,vec3(.58,.55,.48),.6);   // piso: menos ruído da textura, a luz das lâmpadas aparece mais
+    float lex=lc*lvGain*1.4*lnl*lao;lex=(1.-exp(-lex*1.15))/1.15*1.25;   // compressão suave: muitas lâmpadas não estouram o piso
+    reflectedLight.directDiffuse+=lex*lvm*lvTint*ldc;
     // chão molhado: reflete a luz do plano das lâmpadas na direção do espelho (1 leitura extra); poças por ruído
     if(lvRefl>0.&&lwn.y>.9&&lvp.y<.25){
       vec3 lvV=normalize(cameraPosition-lvp),rv=reflect(-lvV,lwn);
-      if(rv.y>.04){
+      if(rv.y>.004){
         float pud=smoothstep(.5,.72,lvN(lvp.xz*.55+3.7)*.7+lvN(lvp.xz*2.3)*.3),sheen=.16+.84*pud;
-        vec3 q=lvp+rv*((6.3-lvp.y)/rv.y),qu=lvsec?(q-lvOrg2)/lvSize2:(q-lvOrg)/lvSize;
+        float lvt=(6.3-lvp.y)/rv.y;vec2 lvh=rv.xz*lvt;lvh*=min(1.,7./max(length(lvh),.001));   // o reflexo olha no máximo 7 m à frente na direção do espelho: a poça continua refletindo lâmpadas mesmo longe, sem sair do volume
+        vec3 q=vec3(lvp.x+lvh.x,6.3,lvp.z+lvh.y),qu=lvsec?(q-lvOrg2)/lvSize2:(q-lvOrg)/lvSize;
         if(qu.x>0.&&qu.x<1.&&qu.z>0.&&qu.z<1.){
           float sl=lvT(q,lvsec),fr=.04+.96*pow(1.-max(dot(lwn,lvV),0.),4.);
-          reflectedLight.directSpecular+=lvTint*smoothstep(.6,2.4,sl)*sl*fr*sheen*lvRefl*lvm*lvGain*.9;}}}
+          reflectedLight.directSpecular+=lvTint*smoothstep(.15,1.4,sl)*min(sl,2.5)*fr*sheen*lvRefl*lvm*lvGain*.9;}}}
   }
 }
 `;
@@ -72,9 +80,9 @@ if(lvOn>0.){
     sh.vertexShader=v.replace('#include <common>','#include <common>\nvarying vec3 vLvP;').replace('#include <project_vertex>','#include <project_vertex>\n{vec4 lvw=vec4(transformed,1.);\n#ifdef USE_INSTANCING\nlvw=instanceMatrix*lvw;\n#endif\nvLvP=(modelMatrix*lvw).xyz;}');
     sh.fragmentShader=f.replace('#include <common>','#include <common>\n'+FRAG_DECL).replace('#include <lights_fragment_begin>','#include <lights_fragment_begin>\n'+FRAG_USE);
     if(gl)sh.fragmentShader=sh.fragmentShader.replace(gl,'if(lvDirt>0.)diffuseColor.rgb=mix(diffuseColor.rgb,lvGrime(diffuseColor.rgb,vLvP,inverseTransformDirection(normal,viewMatrix)),lvDirt);\n'+gl);
-    sh.uniforms.lvTex=LVU.tex;sh.uniforms.lvOrg=LVU.org;sh.uniforms.lvSize=LVU.size;sh.uniforms.lvTint=LVU.tint;sh.uniforms.lvOn=LVU.on;sh.uniforms.lvGain=LVU.gain;sh.uniforms.lvCs=LVU.cs;sh.uniforms.lvMul=LVU.mul;sh.uniforms.lvTex2=LVU.tex2;sh.uniforms.lvOrg2=LVU.org2;sh.uniforms.lvSize2=LVU.size2;sh.uniforms.lvOn2=LVU.on2;sh.uniforms.lvMul2=LVU.mul2;sh.uniforms.lvRefl=LVU.refl;sh.uniforms.lvDirt=LVU.dirt}
+    sh.uniforms.lvTex=LVU.tex;sh.uniforms.lvOrg=LVU.org;sh.uniforms.lvSize=LVU.size;sh.uniforms.lvTint=LVU.tint;sh.uniforms.lvOn=LVU.on;sh.uniforms.lvGain=LVU.gain;sh.uniforms.lvCs=LVU.cs;sh.uniforms.lvMul=LVU.mul;sh.uniforms.lvTex2=LVU.tex2;sh.uniforms.lvOrg2=LVU.org2;sh.uniforms.lvSize2=LVU.size2;sh.uniforms.lvOn2=LVU.on2;sh.uniforms.lvMul2=LVU.mul2;sh.uniforms.lvTexB=LVU.texB;sh.uniforms.lvTexB2=LVU.texB2;sh.uniforms.lvLm=LVU.lm;sh.uniforms.lvLmOrg=LVU.lmOrg;sh.uniforms.lvLmSize=LVU.lmSize;sh.uniforms.lvLmOn=LVU.lmOn;sh.uniforms.lvBounce=LVU.bounce;sh.uniforms.lvRefl=LVU.refl;sh.uniforms.lvDirt=LVU.dirt}
   Object.defineProperty(THREE.Material.prototype,'onBeforeCompile',{configurable:true,
     get(){return this._lvW||(this._lvW=(function(m){return function(sh,r){if(m._lvO)m._lvO.call(m,sh,r);lvPatch(sh,m)}})(this))},
     set(fn){this._lvO=fn}});
-  THREE.Material.prototype.customProgramCacheKey=function(){return(this._lvO?this._lvO.toString():'')+'|lv1'};
+  THREE.Material.prototype.customProgramCacheKey=function(){return(this._lvO?this._lvO.toString():'')+'|lv2'};
 })();

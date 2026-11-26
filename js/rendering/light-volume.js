@@ -12,7 +12,7 @@
 // Ligar/desligar disjuntor, queimar lâmpada: só se calcula a contribuição das luminárias afetadas (delta).
 // Destruição de parede/caixa: recálculo completo, com debounce, depois que os chunks param de mudar.
 const LV={
-  cs:1,gain:1,fs:.25,margin:6,budget:5,
+  cs:.5,gain:1,fs:.25,margin:6,budget:5,errT:0,pfT:0,bScale:1,sum0:1,lm:null,lmInfo:null,ao:null,ind:null,
   wi:-1,ready:false,
   nx:0,ny:0,nz:0,x0:0,y0:0,z0:0,
   base:null,ch:[null,null],tr:null,blocked:null,occ:null,fx:0,fy:0,fz:0,
@@ -67,91 +67,95 @@ function lvRasterDecor(job,tEnd){
     if((job.di&31)===0&&performance.now()>tEnd)return false}
   return true}
 // ---- trabalhos ----
-// completo: reconstrói oclusão e todos os canais. Itens: luminária + vetor de destino (canal)
+// completo: reconstrói oclusão e todos os canais. A oclusão é rasterizada aqui (em fatias); o cálculo de luz roda em workers (lv-bake.js)
+function lvLampRows(ids,pick){return ids.map(id=>lamps[id]).filter(pick).map(L=>LVB.lampRow(L))}
 function lvStartFull(wi){
   const w=WH[wi],m=LV.margin,x0=w.x-LV_HALF_X-m,z0=w.z-LV_HALF_Z-m,nx=Math.ceil((2*LV_HALF_X+2*m)/LV.cs),nz=Math.ceil((2*LV_HALF_Z+2*m)/LV.cs),ny=Math.ceil((H+.5)/LV.cs),
     r=LV.cs/LV.fs,fx=nx*r,fy=ny*r,fz=nz*r,N=nx*ny*nz;
   const chunks=[];for(const c of vchunks){if(c.max.x<x0||c.min.x>x0+nx*LV.cs||c.max.z<z0||c.min.z>z0+nz*LV.cs)continue;chunks.push(c)}
-  const base=new Float32Array(N),g0=new Float32Array(N),g1=new Float32Array(N),slots=[-1,-1],items=[];
-  LREG.BADG[wi].forEach((g,si)=>{if(!g.length)return;slots[si]=Math.min(...g);for(const id of g)items.push({L:lamps[id],t:si?g1:g0})}); // grupo de defeituosas: um canal, piscam juntas
-  for(const id of LREG.byWh[wi]){const L=lamps[id];if((L.bad&&!L.dead)||L.off||!(L.lvI>0))continue;items.push({L,t:base})}
-  LV.job={kind:'full',stage:0,wi,N,chunks,ci:0,decor:lvCollectDecor(x0,z0,nx*LV.cs,nz*LV.cs),di:0,items,ii:0,cell:0,t0:performance.now(),base,g0,g1,slots,
-    occ:new Uint8Array(fx*fy*fz),x0,y0:0,z0,nx,ny,nz,fx,fy,fz}}
-// delta: contribuição de um conjunto de luminárias, aplicada em cima do volume atual
+  const slots=[-1,-1],groups={base:[],g0:[],g1:[]};
+  LREG.BADG[wi].forEach((g,si)=>{if(!g.length)return;slots[si]=Math.min(...g);for(const id of g)groups[si?'g1':'g0'].push(LVB.lampRow(lamps[id]))}); // grupo de defeituosas: um canal, piscam juntas
+  for(const id of LREG.byWh[wi]){const L=lamps[id];if((L.bad&&!L.dead)||L.off||!(L.lvI>0))continue;groups.base.push(LVB.lampRow(L))}
+  LV.job={kind:'full',stage:0,wi,N,chunks,ci:0,decor:lvCollectDecor(x0,z0,nx*LV.cs,nz*LV.cs),di:0,groups,nLamps:groups.base.length+groups.g0.length+groups.g1.length,t0:performance.now(),slots,
+    floorOrg:{x:w.x-LV_HALF_X,z:w.z-LV_HALF_Z},occ:new Uint8Array(fx*fy*fz),x0,y0:0,z0,nx,ny,nz,fx,fy,fz}}
+// delta: contribuição de um conjunto de luminárias (volume + lightmap do piso), aplicada em cima do volume atual
 function lvStartDelta(lampsArr,mode){
-  const N=LV.nx*LV.ny*LV.nz,dl=new Float32Array(N);
-  LV.job={kind:'delta',stage:1,mode,N,items:lampsArr.map(L=>({L,t:dl})),ii:0,cell:0,t0:performance.now(),dl,lamps:lampsArr,
+  const w=WH[LV.wi];
+  LV.job={kind:'delta',stage:1,mode,lampsArr,lamps:lampsArr,t0:performance.now(),floorOrg:{x:w.x-LV_HALF_X,z:w.z-LV_HALF_Z},
     occ:LV.occ,x0:LV.x0,y0:LV.y0,z0:LV.z0,nx:LV.nx,ny:LV.ny,nz:LV.nz,fx:LV.fx,fy:LV.fy,fz:LV.fz}}
-function lvLampSlice(job,tEnd){
-  const nx=job.nx,ny=job.ny,nz=job.nz,x0=job.x0,y0=job.y0,z0=job.z0,cs=LV.cs,N=job.N,occ=job.occ,fx=job.fx,fy=job.fy,fz=job.fz,fs=LV.fs,fxz=fx*fz;
-  const solid=(x,y,z)=>{const i=Math.floor((x-x0)/fs),j=Math.floor((y-y0)/fs),k=Math.floor((z-z0)/fs);if(i<0||j<0||k<0||i>=fx||j>=fy||k>=fz)return 0;return occ[i+k*fx+j*fxz]};
-  while(job.ii<job.items.length){
-    const it=job.items[job.ii],L=it.L,ex=L.pos.x,ey=L.pos.y-L.ly,ez=L.pos.z,R=L.lvRange,I=L.lvI,out=it.t;
-    for(;job.cell<N;job.cell++){
-      const c=job.cell,i=c%nx,k=((c/nx)|0)%nz,j=(c/(nx*nz))|0;
-      const px=x0+(i+.5)*cs,py=y0+(j+.5)*cs,pz=z0+(k+.5)*cs,dx=px-ex,dy=py-ey,dz=pz-ez,d2=dx*dx+dy*dy+dz*dz;
-      if(d2>=R*R)continue;
-      const d=Math.sqrt(d2),f=Math.pow(1-d/R,1.6)*I;if(f<.004)continue;
-      let vis=1;const steps=Math.floor((d-.2)/.2);
-      if(steps>2){const sx=dx/d*.2,sy=dy/d*.2,sz=dz/d*.2;let qx=ex+sx*2,qy=ey+sy*2,qz=ez+sz*2;
-        let hit=0;for(let s=2;s<steps;s++,qx+=sx,qy+=sy,qz+=sz){if(solid(qx,qy,qz)){hit=1;   // 1o sólido: olha só mais 3 amostras (custo limitado) para medir a espessura
-          for(let e=0;e<3&&s+1<steps;e++){s++;qx+=sx;qy+=sy;qz+=sz;if(solid(qx,qy,qz))hit++}
-          break}}
-        vis=hit>=3?0:hit===2?.3:hit===1?.6:1;} // 1 amostra só = vigas/lâmpadas/quinas finas: sombra parcial (sem borrão preto); 2+ = parede/coluna: bloqueia
-      if(vis)out[c]+=f;
-      if((c&255)===0&&performance.now()>tEnd){job.cell=c+1;return false}}
-    job.cell=0;job.ii++}
-  return true}
-// células com centro dentro de sólido ficam sem luz; copia a média das vizinhas livres (×.85) para a superfície da parede não escurecer
-function lvDilate(out,blocked){
-  const nx=LV.nx,ny=LV.ny,nz=LV.nz,res=new Float32Array(out);
-  for(let j=0;j<ny;j++)for(let k=0;k<nz;k++)for(let i=0;i<nx;i++){const c=i+k*nx+j*nx*nz;
-    if(!blocked[c])continue;let s=0,n=0;
-    for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)for(let e=-1;e<=1;e++){const ii=i+a,jj=j+b,kk=k+e;if(ii<0||jj<0||kk<0||ii>=nx||jj>=ny||kk>=nz)continue;
-      const q=ii+kk*nx+jj*nx*nz;if(!blocked[q]){s+=out[q];n++}}
-    res[c]=n?s/n*.85:0}
-  return res}
 function lvFinishFull(job){
-  // prepara tudo (oclusão nova, canais dilatados) sem mexer no volume em uso; troca de galpão espera o jogador chegar perto (ver lvTick)
-  const nx=job.nx,ny=job.ny,nz=job.nz,cs=LV.cs,bl=new Uint8Array(job.N),fs=LV.fs,fxz=job.fx*job.fz,occ=job.occ;
+  // prepara tudo (oclusão nova, canais dilatados, rebote/AO, lightmap) sem mexer no volume em uso; troca de galpão espera o jogador chegar perto (ver lvTick)
+  const nx=job.nx,ny=job.ny,nz=job.nz,cs=LV.cs,bl=new Uint8Array(job.N),fs=LV.fs,fxz=job.fx*job.fz,occ=job.occ,r=job.res;
   for(let j=0;j<ny;j++)for(let k=0;k<nz;k++)for(let i=0;i<nx;i++){
-    const ii=Math.floor((job.x0+(i+.5)*cs-job.x0)/fs),jj=Math.floor(((j+.5)*cs)/fs),kk=Math.floor(((k+.5)*cs)/fs);
+    const ii=Math.floor(((i+.5)*cs)/fs),jj=Math.floor(((j+.5)*cs)/fs),kk=Math.floor(((k+.5)*cs)/fs);
     if(occ[ii+kk*job.fx+jj*fxz])bl[i+k*nx+j*nx*nz]=1}
-  const bak={nx:LV.nx,ny:LV.ny,nz:LV.nz};LV.nx=nx;LV.ny=ny;LV.nz=nz; // lvDilate usa as dimensões de LV
-  const res={job,bl,base:lvDilate(job.base,bl),ch:[lvDilate(job.g0,bl),lvDilate(job.g1,bl)]};
-  LV.nx=bak.nx;LV.ny=bak.ny;LV.nz=bak.nz;
-  LV.job=null;
+  const res={job,bl,base:r.base,ch:[r.g0,r.g1],ao:r.ao,ind:r.ind,lm:r.lm,lmInfo:r.lmInfo};
+  job.res=null;LV.job=null;
   if(job.wi===LV.wi&&LV.ready){lvApply(res)}      // mesmo galpão (dano na estrutura): troca direta, sem fade
   else{LV.pend=res;if(!LV.ready)lvApply(res)}}   // outro galpão: espera o jogador chegar perto
 // o volume que está saindo de uso vira o secundário (continua piscando; disjuntores ficam congelados): é o que se vê por um buraco na parede ou janela
 function lvSnapshot(){
-  const prev2=LVU.tex2.value,cur=LVU.tex.value;
-  LVU.tex2.value=cur;LVU.org2.value.copy(LVU.org.value);LVU.size2.value.copy(LVU.size.value);LVU.on2.value=1;
+  const prev2=LVU.tex2.value,cur=LVU.tex.value,prevB2=LVU.texB2.value,curB=LVU.texB.value;
+  LVU.tex2.value=cur;LVU.texB2.value=curB;LVU.org2.value.copy(LVU.org.value);LVU.size2.value.copy(LVU.size.value);LVU.on2.value=1;
   LV.v2={wi:LV.wi,badSlots:LV.badSlots};
-  if(prev2&&prev2!==LVU.dummy&&prev2!==cur)prev2.dispose()}
+  if(prev2&&prev2!==LVU.dummy&&prev2!==cur)prev2.dispose();
+  if(prevB2&&prevB2!==LVU.dummy&&prevB2!==curB)prevB2.dispose()}
 function lvApply(res){
   const job=res.job;LV.pend=null;
-  if(LV.ready&&LV.wi!==job.wi)lvSnapshot();
+  if(LV.ready&&LV.wi!==job.wi){lvSnapshot();for(const id of LREG.byWh[LV.wi])lamps[id]._lvc=null}
   LV.x0=job.x0;LV.y0=job.y0;LV.z0=job.z0;LV.nx=job.nx;LV.ny=job.ny;LV.nz=job.nz;LV.fx=job.fx;LV.fy=job.fy;LV.fz=job.fz;LV.occ=job.occ;LV.wi=job.wi;
   LV.blocked=res.bl;LV.base=res.base;LV.ch=res.ch;LV.tr=new Float32Array(job.N);LV.trLamps=null;LV.badSlots=job.slots;
+  LV.ao=res.ao;LV.ind=res.ind;LV.lm=res.lm;LV.lmInfo=res.lmInfo;
   LV.snap=new Uint8Array(lamps.length);for(const id of LREG.byWh[job.wi])LV.snap[id]=lamps[id].off?0:1;
-  let lit=0;for(let i=0;i<LV.base.length;i++)if(LV.base[i]>.01)lit++;
-  LV.ready=true;LV.stats.lamps=job.items.length;LV.stats.lit=lit;LV.stats.buildMs=performance.now()-job.t0;LV.stats.fulls++;
-  lvUpload()}
+  let lit=0,sum=0;for(let i=0;i<LV.base.length;i++){const v=LV.base[i];sum+=v;if(v>.01)lit++}
+  LV.sum0=sum>0?sum:1;LV.bScale=1;
+  LV.ready=true;LV.stats.lamps=job.nLamps;LV.stats.lit=lit;LV.stats.buildMs=performance.now()-job.t0;LV.stats.fulls++;
+  lvUploadB();lvUpload()}
+function lvBounce(){let s=0;const b=LV.base;for(let i=0;i<b.length;i++)s+=b[i];LV.bScale=Math.min(1,s/LV.sum0)}   // o rebote acompanha a fração de luz estável que ainda existe
+// soma as contribuições guardadas (recortes) e o lote calculado na hora num volume e num lightmap inteiros
+function lvComposeDelta(res){
+  const nx=LV.nx,ny=LV.ny,nz=LV.nz,li=LV.lmInfo,dd=res.dd?res.dd:new Float32Array(nx*ny*nz),p=res.patch?res.patch:new Float32Array(li.tw*li.th);
+  for(const e of res.es){
+    for(let j=0;j<ny;j++)for(let k=0;k<e.ck;k++){const a=e.i0+(e.k0+k)*nx+j*nx*nz,o=k*e.ci+j*e.ci*e.ck;for(let i=0;i<e.ci;i++)dd[a+i]+=e.v[o+i]}
+    for(let r=0;r<e.ph;r++){const a=(e.r0+r)*li.tw+e.c0,o=r*e.pw;for(let c=0;c<e.pw;c++)p[a+c]+=e.p[o+c]}}
+  return {dd,patch:p}}
 function lvFinishDelta(job){
-  const dd=lvDilate(job.dl,LV.blocked),b=LV.base;
-  if(job.mode==='off'){for(let i=0;i<b.length;i++){const v=b[i]-dd[i];b[i]=v>0?v:0}LV.stats.deltas++;lvUpload()}
+  const r=lvComposeDelta(job.res),dd=r.dd,p=r.patch,b=LV.base,L0=LV.lm[0];
+  if(job.mode==='off'){
+    for(let i=0;i<b.length;i++){const v=b[i]-dd[i];b[i]=v>0?v:0}
+    for(let i=0;i<L0.length;i++){const v=L0[i]-p[i];L0[i]=v>0?v:0}
+    LV.stats.deltas++;lvBounce();lvUpload()}
   else{ // 'on': entra no canal A, com multiplicador animado; ao fim da partida é incorporado ao canal estável
-    lvFoldTr();LV.tr=dd;LV.trLamps=job.lamps;LV.stats.deltas++;lvUpload()}
-  LV.job=null}
-function lvFoldTr(){if(!LV.trLamps)return;const b=LV.base,t=LV.tr;for(let i=0;i<b.length;i++)b[i]+=t[i];LV.tr=new Float32Array(b.length);LV.trLamps=null}
+    lvFoldTr();LV.tr=dd;LV.lm[3]=p;LV.trLamps=job.lamps;LV.stats.deltas++;lvUpload()}
+  job.res=null;LV.job=null}
+// pré-calcula, em segundo plano, a contribuição de cada luminária do galpão ativo (as mais perto do jogador primeiro): apagar/quebrar vira só uma subtração
+function lvPrefetch(){
+  const cx=camera.position.x,cz=camera.position.z;let best=null,bd=40;
+  for(const id of LREG.byWh[LV.wi]){const L=lamps[id];if((L.bad&&!L.dead)||L.off||!(L.lvI>0)||(L._lvc&&L._lvc.occ===LV.occ))continue;
+    const d=Math.hypot(L.pos.x-cx,L.pos.z-cz);if(d<bd){bd=d;best=L}}
+  if(best)LVB.prefetch({occ:LV.occ,x0:LV.x0,y0:LV.y0,z0:LV.z0,nx:LV.nx,ny:LV.ny,nz:LV.nz,fx:LV.fx,fy:LV.fy,fz:LV.fz,floorOrg:{x:WH[LV.wi].x-LV_HALF_X,z:WH[LV.wi].z-LV_HALF_Z}},best)}
+function lvFoldTr(){if(!LV.trLamps)return;const b=LV.base,t=LV.tr,L0=LV.lm[0],L3=LV.lm[3];
+  for(let i=0;i<b.length;i++)b[i]+=t[i];for(let i=0;i<L0.length;i++)L0[i]+=L3[i];
+  LV.tr=new Float32Array(b.length);LV.lm[3]=new Float32Array(L0.length);LV.trLamps=null;lvBounce()}
 // ---- GPU ----
+function lvTex3(h){const tex=new THREE.DataTexture3D(h,LV.nx,LV.nz,LV.ny);tex.format=THREE.RGBAFormat;tex.type=THREE.HalfFloatType;tex.internalFormat='RGBA16F';
+  tex.minFilter=tex.magFilter=THREE.LinearFilter;tex.wrapS=tex.wrapT=tex.wrapR=THREE.ClampToEdgeWrapping;tex.unpackAlignment=1;tex.generateMipmaps=false;tex.needsUpdate=true;return tex}
+// AO + rebote (textura própria): só muda quando o galpão é recalculado por inteiro
+function lvUploadB(){
+  const N=LV.ao.length,h=new Uint16Array(N*4),f=THREE.DataUtils.toHalfFloat,a=LV.ao,d=LV.ind;
+  for(let i=0,o=0;i<N;i++,o+=4){h[o]=f(a[i]);h[o+1]=f(d[i])}
+  const old=LVU.texB.value;LVU.texB.value=lvTex3(h);if(old&&old!==LVU.dummy&&old!==LVU.texB2.value)old.dispose()}
 function lvUpload(){
   const N=LV.base.length,h=new Uint16Array(N*4),f=THREE.DataUtils.toHalfFloat,b=LV.base,g0=LV.ch[0],g1=LV.ch[1],t=LV.tr;
   for(let i=0,o=0;i<N;i++,o+=4){h[o]=f(b[i]);h[o+1]=f(g0[i]);h[o+2]=f(g1[i]);h[o+3]=f(t[i])}
-  const tex=new THREE.DataTexture3D(h,LV.nx,LV.nz,LV.ny);tex.format=THREE.RGBAFormat;tex.type=THREE.HalfFloatType;tex.internalFormat='RGBA16F';
-  tex.minFilter=tex.magFilter=THREE.LinearFilter;tex.wrapS=tex.wrapT=tex.wrapR=THREE.ClampToEdgeWrapping;tex.unpackAlignment=1;tex.generateMipmaps=false;tex.needsUpdate=true;
+  const tex=lvTex3(h);
   const old=LVU.tex.value;LVU.tex.value=tex;if(old&&old!==LVU.dummy&&old!==LVU.tex2.value)old.dispose();
+  const li=LV.lmInfo,M=li.tw*li.th,lh=new Uint16Array(M*4),L=LV.lm;
+  for(let i=0,o=0;i<M;i++,o+=4){lh[o]=f(L[0][i]);lh[o+1]=f(L[1][i]);lh[o+2]=f(L[2][i]);lh[o+3]=f(L[3][i])}
+  const lt=new THREE.DataTexture(lh,li.tw,li.th,THREE.RGBAFormat,THREE.HalfFloatType);lt.internalFormat='RGBA16F';lt.minFilter=lt.magFilter=THREE.LinearFilter;
+  lt.wrapS=lt.wrapT=THREE.ClampToEdgeWrapping;lt.generateMipmaps=false;lt.needsUpdate=true;
+  const ol=LVU.lm.value;LVU.lm.value=lt;if(ol&&ol!==LVU.dummy2)ol.dispose();
+  LVU.lmOrg.value.set(li.x0,li.z0);LVU.lmSize.value.set(li.tw/LVB.TPM,li.th/LVB.TPM);LVU.lmOn.value=1;LVU.bounce.value=LV.bScale;
   LVU.org.value.set(LV.x0,LV.y0,LV.z0);LVU.size.value.set(LV.nx*LV.cs,LV.ny*LV.cs,LV.nz*LV.cs);LVU.cs.value=LV.cs;LVU.gain.value=LV.gain;LVU.on.value=1}
 // ---- animação dos multiplicadores (todo quadro, custo desprezível) ----
 function lvDyn(){
@@ -190,15 +194,20 @@ function lvTick(dt){
   LVU.gain.value=LV.gain;
   if(!LV.job){
     const wi=tg.wi;
-    if(wi>=0&&wi!==LV.wi&&!(LV.pend&&LV.pend.job.wi===wi)&&LV.fadeDir===0){LV.queue.length=0;lvStartFull(wi)}
-    else if(LV.ready&&LV.dirtyT&&t0>LV.dirtyT){LV.dirtyT=0;LV.queue.length=0;lvFoldTr();lvStartFull(LV.wi)}
+    if(wi>=0&&wi!==LV.wi&&!(LV.pend&&LV.pend.job.wi===wi)&&LV.fadeDir===0&&t0>LV.errT){LV.queue.length=0;lvStartFull(wi)}
+    else if(LV.ready&&LV.dirtyT&&t0>LV.dirtyT&&t0>LV.errT){LV.dirtyT=0;LV.queue.length=0;lvFoldTr();lvStartFull(LV.wi)}
     else if(LV.ready){
-      LV.pollT-=dt;if(LV.pollT<=0){LV.pollT=.15;lvPoll()}
-      if(LV.queue.length){const q=LV.queue.shift();lvFoldTr();lvStartDelta(q[1],q[0])}}
+      LV.pollT-=dt;if(LV.pollT<=0){LV.pollT=.05;lvPoll()}
+      if(LV.queue.length){const q=LV.queue.shift();lvFoldTr();lvStartDelta(q[1],q[0])}
+      else if(t0>LV.pfT&&!LVB.busy()){LV.pfT=t0+350;lvPrefetch()}}
     if(!LV.job)return}
   const job=LV.job,tEnd=t0+LV.budget;
   if(job.kind==='full'&&job.stage===0){if(!lvRasterChunks(job,tEnd)||!lvRasterDecor(job,tEnd)){LV.stats.ticks++;LV.stats.ms+=performance.now()-t0;return}job.stage=1}
-  if(job.stage===1){if(!lvLampSlice(job,tEnd)){LV.stats.ticks++;LV.stats.ms+=performance.now()-t0;return}job.stage=2}
+  if(job.stage===1){
+    if(!job.started){job.started=true;(job.kind==='full'?LVB.bakeFull(job):LVB.bakeDelta(job)).then(r=>{job.res=r;job.done=1},e=>{console.error('[LV] falha no cálculo da luz',e);job.done=2})}
+    if(!job.done){LV.stats.ticks++;LV.stats.ms+=performance.now()-t0;return}
+    if(job.done===2){LV.job=null;LV.errT=performance.now()+4000;return}   // falhou: tenta de novo daqui a pouco
+    job.stage=2}
   if(job.stage===2){if(job.kind==='full')lvFinishFull(job);else lvFinishDelta(job)}
   LV.stats.ticks++;LV.stats.ms+=performance.now()-t0}
 // luz (soma de intensidades) em um ponto do mundo, com os multiplicadores atuais; trilinear. 0 fora do volume ou sem volume pronto
